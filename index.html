@@ -380,7 +380,13 @@ form{display:block;margin-top:6px}
         <div class="row-item thumbset"><img id="setQr" alt="QR LINE ปัจจุบัน"><div><label class="link-btn" for="qrUp">เปลี่ยนรูป QR LINE</label><input id="qrUp" type="file" accept="image/*" hidden><button type="button" class="link-btn" id="qrReset">ใช้ QR เดิม</button></div></div>
         <div class="row-item thumbset"><img id="setCard" alt="รูปนามบัตรต้นแบบ"><div><label class="link-btn" for="cardUp">เปลี่ยนรูปนามบัตร</label><input id="cardUp" type="file" accept="image/*" hidden><button type="button" class="link-btn" id="cardReset">ใช้รูปเดิม</button></div></div>
       </div>
-      <p class="foot">ชื่อ เบอร์ อีเมล และ LinkedIn บนนามบัตรเป็นส่วนหนึ่งของรูป ถ้าเปลี่ยนให้อัปโหลดรูปใหม่ ถ้ารูปใหม่วางแบบต่างจากเดิม ให้ปิด QR และแถวที่ระบบเพิ่ม</p>
+      <div class="sec">รูปนามบัตรที่บันทึกไว้</div>
+      <div class="group">
+        <button type="button" class="cell" id="bulkCrop"><i class="ic" style="background:var(--lime);color:var(--lime-ink)">⌗</i><span>ตัดขอบและปรับรูปเดิมทั้งหมด</span></button>
+        <button type="button" class="cell" id="bulkUndo"><i class="ic" style="background:#8E8E93">↺</i><span>กลับไปใช้รูปต้นฉบับทั้งหมด</span></button>
+      </div>
+      <p class="foot" id="bulkMsg">ตัดเฉพาะรูปที่หาขอบเจอ รูปต้นฉบับเก็บไว้ในเครื่อง ย้อนกลับได้ทุกเมื่อ รูปที่แก้จะส่งขึ้น Drive ใหม่และอัปเดตลิงก์ใน Sheet ให้</p>
+      <p class="foot" style="margin-top:14px">ชื่อ เบอร์ อีเมล และ LinkedIn บนนามบัตรเป็นส่วนหนึ่งของรูป ถ้าเปลี่ยนให้อัปโหลดรูปใหม่ ถ้ารูปใหม่วางแบบต่างจากเดิม ให้ปิด QR และแถวที่ระบบเพิ่ม</p>
 
       <div class="sec">ลิงก์ให้คนตรงหน้าสแกน</div>
       <div class="group">
@@ -1108,8 +1114,18 @@ function drawOcr(){
 }
 
 /* ================= drafts / queue ================= */
+/* a saved contact's photo becomes editable: its first original if we kept one, else the photo itself (from Drive if needed) */
+async function loadSavedOrig(d){
+  const id = d.docId, c = D.cards.find(x => x.id === id);
+  let b = await blobGet(id + ":photo_orig") || await blobGet(id + ":photo");
+  if (!b && c && c.photo && c.photo.d && token()) { try { b = await gdBlob(c.photo.d); await blobPut(id + ":photo", b); } catch {} }
+  if (cur !== d) return;
+  if (!b) { if (c && c.photo && c.photo.old) toast("รูปนี้อยู่ในโฟลเดอร์ Drive เดิม แอปแก้ไม่ได้ — ถ่ายใหม่ได้ที่ปุ่มสแกน", 5000); return; }
+  d.orig = b; drawTools();
+}
 /* straighten and clean the photo; keep the original so the edges can be fixed later */
 async function rescan(d, findEdges){
+  if (d.status === "edit") d.photoChanged = true;
   try {
     const img = await createImageBitmap(d.orig);
     if (findEdges) d.quad = Scan.detect(img);
@@ -1146,6 +1162,7 @@ let crop = null;
 $("#tCrop").addEventListener("click", async () => {
   const d = cur; if (!d || !d.orig) return;
   const img = await createImageBitmap(d.orig); const W = img.width, H = img.height;
+  if (!d.quad && d.status === "edit") d.quad = Scan.detect(img);
   crop = { d, W, H, q: (d.quad || Scan.full(img)).map(p => p.slice()), img };
   $("#cropImg").src = URL.createObjectURL(d.orig); $("#cropSheet").classList.add("on");
   $("#cropImg").onload = drawCrop;
@@ -1213,6 +1230,7 @@ function openDraft(d){
   else { $("#sendMail").checked = d.status !== "edit" && S.mailDefault; $("#mailLang").value = (d.ocr && d.ocr.lang === "en") ? "en" : "th"; fillMail(); }
   if (d.status === "edit" && !d.mail) fillMail();
   drawSelfie(); drawLoc(); drawOcr(); drawQueue(); drawPlaces(); drawTools();
+  if (d.status === "edit" && d.photoKey && !d.orig) loadSavedOrig(d);
 }
 function fillFromOcr(d, quiet, force){
   const f = $("#form"), r = d.ocr || {};
@@ -1296,7 +1314,11 @@ $("#form").addEventListener("submit", async e => {
     const base = isEdit ? (D.cards.find(c => c.id === d.docId) || {}) : {};
     const id = d.docId || ("c" + uid());
     const c = { ...base, ...rec, id, lat: d.gps && d.locOk ? d.gps[0] : null, lng: d.gps && d.locOk ? d.gps[1] : null, createdAt: base.createdAt || Date.now(), u: Date.now(), sheetDirty: true };
-    if (d.blob) { await blobPut(id + ":photo", d.blob); urlCache.delete(id + ":photo"); c.photo = { local: true }; }
+    if (d.blob && (!isEdit || d.photoChanged)) {
+      if (isEdit && d.orig && !(await blobGet(id + ":photo_orig"))) await blobPut(id + ":photo_orig", d.orig);
+      if (!isEdit && d.orig) await blobPut(id + ":photo_orig", d.orig);
+      await blobPut(id + ":photo", d.blob); urlCache.delete(id + ":photo"); c.photo = { local: true };
+    }
     if (d.selfie) { await blobPut(id + ":selfie", d.selfie); urlCache.delete(id + ":selfie"); c.selfie = { local: true }; }
     else if (d.selfieRemoved) c.selfie = null;
     if (wantMail) c.mail = { status: "queued", to: rec.email, subject: $("#mailSubj").value.trim(), body: $("#mailBody").value };
@@ -1377,6 +1399,7 @@ function openDetail(id){
       <button class="cell" data-act="chat"><i class="ic" style="background:#636366">⧉</i><span>คัดลอกข้อความแชท</span></button>
       <a class="cell" href="${esc(chatHref("wa", c))}" target="_blank" rel="noopener"><i class="ic" style="background:#25D366">W</i><span>WhatsApp</span>${waNumber(c) ? "" : "<em>เลือกผู้รับเอง</em>"}</a>
       <button class="cell" data-act="copy"><i class="ic" style="background:#0A84FF">⎘</i><span>คัดลอกข้อมูลติดต่อ</span></button>
+      ${c.photo && !c.photo.old ? `<button class="cell" data-act="photo"><i class="ic" style="background:var(--lime);color:var(--lime-ink)">⌗</i><span>ตัดขอบ / ปรับรูปนามบัตร</span></button>` : ""}
       <button class="cell" data-act="edit"><i class="ic" style="background:#8E8E93">✎</i><span>แก้ไข</span></button>
     </div>
     <div class="group" style="margin-top:16px"><button class="cell plainc danger" data-act="del"><span>ลบรายชื่อนี้</span></button></div>
@@ -1390,6 +1413,7 @@ function openDetail(id){
       const t = [nameOf(c), c.name_th && c.name_en ? c.name_en : "", c.title, c.company, c.email, c.mobile, c.phone, c.line && "LINE: " + c.line, c.website, c.address].filter(Boolean).join("\n");
       try { await navigator.clipboard.writeText(t); msg.textContent = "คัดลอกแล้ว"; } catch { msg.textContent = "คัดลอกไม่ได้"; }
     }
+    if (a.dataset.act === "photo") { a.dataset.act = "edit"; a.click(); const wait = async n => { if (cur && cur.orig) $("#tCrop").click(); else if (n) setTimeout(() => wait(n - 1), 250); }; wait(20); return; }
     if (a.dataset.act === "edit") {
       $("#detSheet").classList.remove("on"); stash(); go("scan");
       openDraft({ id: "e" + c.id, status: "edit", docId: c.id, photoKey: c.photo ? c.id + ":photo" : null, selfieKey: c.selfie ? c.id + ":selfie" : null,
@@ -1398,7 +1422,7 @@ function openDetail(id){
     if (a.dataset.act === "del") {
       if (a.dataset.sure !== "1") { a.dataset.sure = "1"; a.querySelector("span").textContent = "แตะอีกครั้งเพื่อยืนยันลบ"; return; }
       D.cards = D.cards.filter(x => x.id !== c.id); D.gone[c.id] = Date.now(); L.goneRows = [...(L.goneRows || []), c.id];
-      await persist(); IDB.del("blobs", c.id + ":photo").catch(() => {}); IDB.del("blobs", c.id + ":selfie").catch(() => {});
+      await persist(); IDB.del("blobs", c.id + ":photo").catch(() => {}); IDB.del("blobs", c.id + ":selfie").catch(() => {}); IDB.del("blobs", c.id + ":photo_orig").catch(() => {});
       $("#detSheet").classList.remove("on"); renderList(); toast("ลบแล้ว (รูปใน Google Drive ยังอยู่)"); syncSoon();
     }
     if (a.dataset.act === "mail") {
@@ -1438,6 +1462,27 @@ $("#setForm").addEventListener("submit", async e => {
   $("#setErr").hidden = true; n.qrImg = pendQr || null; n.cardImg = pendCard || null; n.u = Date.now();
   D.settings = n; S = n; await persist(); applySettings(); toast("บันทึกการตั้งค่าแล้ว"); syncSoon();
 });
+async function bulkPhotos(undo){
+  const msg = $("#bulkMsg"), list = D.cards.filter(c => c.photo); let done = 0, skip = 0, i = 0;
+  for (const c of list) {
+    msg.textContent = (undo ? "กำลังคืนรูปต้นฉบับ " : "กำลังตัดขอบ ") + (++i) + "/" + list.length + "…";
+    const orig = await blobGet(c.id + ":photo_orig");
+    try {
+      if (undo) { if (!orig) { skip++; continue; } await blobPut(c.id + ":photo", orig); await IDB.del("blobs", c.id + ":photo_orig"); }
+      else {
+        const src = orig || await blobGet(c.id + ":photo"); if (!src) { skip++; continue; }
+        const img = await createImageBitmap(src), q = Scan.detect(img); if (!q) { skip++; continue; }
+        if (!orig) await blobPut(c.id + ":photo_orig", src);
+        await blobPut(c.id + ":photo", await Scan.process(img, q, 0));
+      }
+      urlCache.delete(c.id + ":photo"); c.photo = { local: true }; c.u = Date.now(); c.sheetDirty = true; done++;
+    } catch { skip++; }
+  }
+  await persist(); renderList(); syncSoon();
+  msg.textContent = (undo ? `คืนรูปต้นฉบับ ${done} รูป` : `ตัดขอบและปรับแล้ว ${done} รูป`) + (skip ? ` · ข้าม ${skip} รูป (${undo ? "ไม่มีต้นฉบับ" : "หาขอบไม่เจอหรือไม่มีรูปในเครื่อง — แก้ทีละคนได้ที่ รายชื่อ → แก้ไข → ปรับขอบ"})` : "") + (done ? " · จะส่งขึ้น Drive และอัปเดต Sheet ให้" : "");
+}
+$("#bulkCrop").addEventListener("click", e => { const b = e.currentTarget; if (b.dataset.sure !== "1") { b.dataset.sure = "1"; b.querySelector("span").textContent = "แตะอีกครั้งเพื่อเริ่ม"; return; } b.dataset.sure = ""; b.querySelector("span").textContent = "ตัดขอบและปรับรูปเดิมทั้งหมด"; bulkPhotos(false); });
+$("#bulkUndo").addEventListener("click", e => { const b = e.currentTarget; if (b.dataset.sure !== "1") { b.dataset.sure = "1"; b.querySelector("span").textContent = "แตะอีกครั้งเพื่อยืนยัน"; return; } b.dataset.sure = ""; b.querySelector("span").textContent = "กลับไปใช้รูปต้นฉบับทั้งหมด"; bulkPhotos(true); });
 $("#testKey").addEventListener("click", async () => {
   const el = $("#keyMsg"), v = k => $(`#setForm [data-k="${k}"]`).value.trim();
   const keep = clone(S); Object.assign(S, { ocrProvider: v("ocrProvider"), geminiKey: v("geminiKey"), geminiModel: v("geminiModel") || DEF.geminiModel, apiKey: v("apiKey"), model: v("model") || DEF.model });
