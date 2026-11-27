@@ -153,7 +153,23 @@ form{display:block;margin-top:6px}
 .item .n{font-weight:600;font-size:17px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .item .c{font-size:15px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tag{display:inline-block;font-size:12px;font-weight:600;padding:2px 8px;border-radius:99px;background:var(--panel2);color:var(--mute);margin-top:4px}
-.tag.ok{color:var(--ok);background:rgba(48,209,88,.15)}.tag.bad{color:var(--bad);background:rgba(255,69,58,.15)}
+.tag.ok{color:var(--ok);background:rgba(48,209,88,.15)}.tag.bad{color:var(--bad);background:rgba(255,69,58,.15)}.tag.warn{color:#ff9f0a;background:rgba(255,159,10,.15)}
+.send-btn{width:34px;height:34px;border-radius:50%;border:0;background:var(--lime);color:var(--lime-ink);font-size:20px;font-weight:700;line-height:1;display:grid;place-items:center}
+.send-btn:disabled{opacity:.4}
+.mailrows input{text-align:left!important}
+.mailrows textarea{text-align:left;width:100%;min-height:260px;border:0;background:transparent;color:inherit;font:inherit;font-size:16px;line-height:1.5;padding:12px 16px;resize:vertical;outline:none}
+.mailrows .lrow{display:flex;align-items:center;justify-content:space-between;padding:8px 16px;min-height:44px;border-bottom:.5px solid var(--sep, rgba(84,84,88,.6))}
+.seg.mini{margin:0;width:auto}.seg.mini button{padding:6px 14px;font-size:14px}
+.attach{display:flex;gap:10px;flex-wrap:wrap}
+.att{display:flex;align-items:center;gap:10px;background:#2c2c2e;border-radius:12px;padding:8px 12px 8px 8px;font-size:14px;line-height:1.25}
+.att img{width:34px;height:58px;object-fit:cover;border-radius:5px}.att i{font-style:normal;font-weight:700;font-size:11px;width:34px;height:42px;border-radius:5px;display:grid;place-items:center;background:#0A84FF;color:#fff}
+.att small{color:var(--mute)}
+.mprev{margin-top:14px}.mprev summary{color:var(--lime);font-size:15px;padding:6px 0;cursor:pointer}
+#mPrev{background:#fff;border-radius:12px;padding:16px;margin-top:8px;color:#222}
+.hist{font-size:14px;color:var(--mute);display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:8px 16px;border-bottom:.5px solid rgba(84,84,88,.4)}.hist:last-child{border:0}
+.hist span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.hist b{font-weight:600;white-space:nowrap;flex:none}
+.field .hlist{margin-top:6px}.field .hist{padding:4px 0;font-size:13px}.hist .ok{color:var(--ok)}.hist .bad{color:var(--bad)}
+.filt{display:flex;gap:8px;margin:0 0 10px}.filt button{border:0;border-radius:99px;padding:6px 14px;background:var(--panel2);color:inherit;font:inherit;font-size:14px}.filt button.on{background:var(--lime);color:var(--lime-ink);font-weight:600}
 .day{font-size:13px;color:var(--mute);margin:24px 16px 7px}
 .day:first-child{margin-top:10px}
 .empty{text-align:center;padding:54px 20px;color:var(--mute);background:var(--panel);border-radius:var(--r);font-size:15px}
@@ -324,16 +340,9 @@ form{display:block;margin-top:6px}
 
         <div class="sec">อีเมลยินดีที่ได้รู้จัก</div>
         <div class="group rows">
-          <label class="check"><span>ส่งพร้อมแนบนามบัตรผม</span><input type="checkbox" id="sendMail" checked></label>
-          <details>
-            <summary>ดูและแก้อีเมล</summary>
-            <label><span>ภาษา</span><select id="mailLang"><option value="th">ไทย</option><option value="en">English</option></select></label>
-            <label><span>ส่งจาก</span><input id="mailFrom" disabled></label>
-            <label><span>หัวข้อ</span><input id="mailSubj"></label>
-            <label class="stack"><span>ข้อความ</span><textarea id="mailBody" rows="12"></textarea></label>
-            <p class="foot in">แนบไฟล์ Chuchchon_360TRUCK_Namecard.jpg</p>
-          </details>
+          <label class="check"><span>ส่งอีเมลพร้อมนามบัตรผม</span><input type="checkbox" id="sendMail" checked></label>
         </div>
+        <p class="foot">กดบันทึกแล้ว อีเมลจะเปิดขึ้นมาให้ตรวจและแก้ก่อนส่ง จะส่งทันทีหรือเก็บไว้ส่งทีหลังก็ได้</p>
 
         <div class="sec">ข้อความแชทสำหรับคนนี้</div>
         <div class="group" id="formChat">
@@ -353,6 +362,7 @@ form{display:block;margin-top:6px}
   <section class="view" id="v-list" data-title="รายชื่อ">
     <h1 class="large">รายชื่อ</h1>
     <input class="search" id="q" type="search" placeholder="ค้นหาชื่อ บริษัท หรือสถานที่" aria-label="ค้นหา">
+    <div class="filt" id="filt"><button type="button" data-f="" class="on">ทั้งหมด</button><button type="button" data-f="unsent">ยังไม่ส่งอีเมล</button></div>
     <div class="quick" id="gLinks"></div>
     <div class="list" id="list"></div>
   </section>
@@ -490,6 +500,25 @@ form{display:block;margin-top:6px}
     <div class="cropbox" id="cropBox"><img id="cropImg" alt="รูปต้นฉบับ"><svg id="cropSvg"></svg><canvas id="loupe" width="336" height="336" hidden></canvas></div>
     <div class="seg" style="margin-top:14px"><button type="button" id="cropAuto">หาขอบอัตโนมัติ</button><button type="button" id="cropAll">ทั้งภาพ</button></div>
     <p class="foot" style="text-align:center">ลากมุมทั้งสี่ให้ตรงขอบนามบัตร</p>
+  </div>
+</div>
+<div class="sheet" id="mailSheet" role="dialog" aria-modal="true" aria-label="ตรวจอีเมลก่อนส่ง">
+  <div class="body">
+    <div class="head"><button type="button" class="link-btn" id="mLater">ไว้ทีหลัง</button><h3 style="padding:0">ตรวจอีเมล</h3><button type="button" class="send-btn" id="mSend" aria-label="ส่ง">↑</button></div>
+    <div class="group rows mailrows">
+      <label><span>ถึง</span><input id="mTo" type="email" inputmode="email" autocomplete="off"></label>
+      <label><span>จาก</span><input id="mFrom" disabled></label>
+      <div class="lrow"><span>ภาษา</span><div class="seg mini" id="mLang"><button type="button" data-l="th">ไทย</button><button type="button" data-l="en">English</button></div></div>
+      <label><span>หัวข้อ</span><input id="mSubj"></label>
+      <textarea id="mBody" rows="12" aria-label="ข้อความ"></textarea>
+    </div>
+    <div class="sec">ไฟล์แนบ</div>
+    <div class="attach"><div class="att"><img id="mCard" alt=""><span>นามบัตร<br><small>JPG · ในเนื้ออีเมล</small></span></div><div class="att"><i>VCF</i><span>บันทึกรายชื่อ<br><small id="mVcf"></small></span></div></div>
+    <details class="mprev"><summary>ดูแบบที่ผู้รับเห็น</summary><div id="mPrev"></div></details>
+    <div id="mHist"></div>
+    <p class="foot" id="mMsg" style="text-align:center">แก้ได้เลย ระบบเก็บให้อัตโนมัติ</p>
+    <button type="button" class="btn lime big" id="mSend2">ส่งอีเมล</button>
+    <button type="button" class="btn plain" id="mLater2" style="margin-top:4px">เก็บไว้ส่งทีหลัง</button>
   </div>
 </div>
 <div class="sheet" id="cloudSheet" role="dialog" aria-modal="true" aria-label="Google">
@@ -654,23 +683,62 @@ async function ensureFolders(){
 const b64u = s => btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 const utf8b64 = s => { const u = new TextEncoder().encode(s); let x = ""; for (let i = 0; i < u.length; i += 0x8000) x += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(x); };
 const wrap76 = s => s.replace(/.{1,76}/g, "$&\r\n");
-const htmlFrom = t => '<div style="font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:#222">' + esc(t).replace(/\n/g, "<br>") + "</div>";
+/* plain text → HTML where emails, web addresses, phone numbers and LINE IDs can be tapped */
+function linkify(t){
+  const re = /([\w.+-]+@[\w-]+(?:\.[\w-]+)+)|(https?:\/\/[^\s<]+|www\.[^\s<]+|(?:facebook|linkedin|instagram)\.com\/[^\s<]+)|(LINE(?: ID)?\s*:\s*)([\w.@-]+)|((?:\+66[\s-]?|0)\d{1,2}[\s-]?\d{3}[\s-]?\d{3,4})/gi;
+  let out = "", last = 0, m; const A = (href, txt) => `<a href="${esc(href)}" style="color:#0a66c2;text-decoration:none">${esc(txt)}</a>`;
+  while ((m = re.exec(t))) {
+    out += esc(t.slice(last, m.index)); last = re.lastIndex;
+    if (m[1]) out += A("mailto:" + m[1], m[1]);
+    else if (m[2]) { const u = m[2].replace(/[.,)]+$/, ""), tail = m[2].slice(u.length); out += A(/^https?:/i.test(u) ? u : "https://" + u, u) + esc(tail); }
+    else if (m[4]) out += esc(m[3]) + A(m[4] === S.lineId && S.lineUrl ? S.lineUrl : "https://line.me/ti/p/~" + m[4], m[4]);
+    else if (m[5]) { const d = m[5].replace(/[^\d+]/g, ""); out += A("tel:" + (d.startsWith("0") ? "+66" + d.slice(1) : d), m[5]); }
+  }
+  return (out + esc(t.slice(last))).replace(/\n/g, "<br>");
+}
+const mailIsTh = body => /[\u0E00-\u0E7F]/.test(body);
+/* the HTML part: the message, then the card itself and one-tap links under it */
+function mailHtml(body, imgSrc){
+  const th = mailIsTh(body), L = (u, t) => u ? `<a href="${esc(u)}" style="color:#0a66c2;text-decoration:none">${esc(t)}</a>` : "";
+  const links = [L(S.lineUrl, th ? "เพิ่มเพื่อน LINE" : "Add me on LINE"), L(S.linkedin, "LinkedIn"), L(S.facebook, "Facebook"), L("https://www.360truck.co", "360truck.co")].filter(Boolean).join(' &nbsp;·&nbsp; ');
+  return `<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#222">${linkify(body)}</div>`
+    + `<div style="margin-top:20px"><a href="${esc(S.lineUrl || S.linkedin || "#")}"><img src="${imgSrc}" width="280" alt="${esc((th ? "นามบัตร " : "Business card – ") + S.nameEn)}" style="width:280px;max-width:100%;height:auto;border:0;border-radius:14px;display:block"></a></div>`
+    + `<div style="font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#666;margin-top:10px">${links}</div>`
+    + `<div style="font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#999;margin-top:6px">${th ? "แนบไฟล์รายชื่อ (.vcf) มาด้วย แตะเพื่อบันทึกลงมือถือได้ทันทีครับ" : "My contact file (.vcf) is attached — tap it to save me to your phone."}</div>`;
+}
+/* contact file: one tap saves Sea to the other person's phone */
+function vcard(){
+  const e = v => String(v || "").replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/([,;])/g, "\\$1");
+  const full = String(S.nameEn || "").replace(/\s*\(.*?\)\s*/g, " ").trim(), nick = (String(S.nameEn || "").match(/\(([^)]+)\)/) || [])[1] || "";
+  const parts = full.split(/\s+/), given = parts[0] || "", family = parts.slice(1).join(" ");
+  const tel = String(S.phone || "").replace(/[^\d+]/g, "");
+  const L = ["BEGIN:VCARD", "VERSION:3.0", `N:${e(family)};${e(given)};;;`, `FN:${e(S.nameEn)}`, nick && `NICKNAME:${e(nick)}`,
+    S.company && `ORG:${e(S.company)}`, S.title && `TITLE:${e(S.title)}`, tel && `TEL;TYPE=CELL,VOICE:${tel}`, S.email && `EMAIL;TYPE=WORK,INTERNET:${S.email}`,
+    "URL;TYPE=WORK:https://www.360truck.co", S.linkedin && `X-SOCIALPROFILE;TYPE=linkedin:${S.linkedin}`, S.facebook && `X-SOCIALPROFILE;TYPE=facebook:${S.facebook}`,
+    S.lineUrl && `X-SOCIALPROFILE;TYPE=line:${S.lineUrl}`, `NOTE:${e([S.lineId && "LINE: " + S.lineId, S.nameTh].filter(Boolean).join("\n"))}`, "END:VCARD"].filter(Boolean);
+  return L.join("\r\n") + "\r\n";
+}
+const vcfName = () => (String(S.nameEn || "contact").replace(/\s*\(.*?\)\s*/g, " ").trim().replace(/[^\w]+/g, "_") || "contact") + ".vcf";
 async function sendMail(to, subject, body){
-  const mix = "m" + uid(), alt = "a" + uid(), card = cardJpeg.split(",")[1];
+  if (!cardJpeg) await renderCard();
+  const mix = "m" + uid(), rel = "r" + uid(), alt = "a" + uid(), card = cardJpeg.split(",")[1], cid = "card." + uid() + "@carddrop";
   const mime = [
     `To: ${to}`, `Subject: =?UTF-8?B?${utf8b64(subject)}?=`, "MIME-Version: 1.0", `Content-Type: multipart/mixed; boundary="${mix}"`, "",
-    `--${mix}`, `Content-Type: multipart/alternative; boundary="${alt}"`, "",
+    `--${mix}`, `Content-Type: multipart/related; boundary="${rel}"`, "",
+    `--${rel}`, `Content-Type: multipart/alternative; boundary="${alt}"`, "",
     `--${alt}`, "Content-Type: text/plain; charset=UTF-8", "Content-Transfer-Encoding: base64", "", wrap76(utf8b64(body)),
-    `--${alt}`, "Content-Type: text/html; charset=UTF-8", "Content-Transfer-Encoding: base64", "", wrap76(utf8b64(htmlFrom(body))),
+    `--${alt}`, "Content-Type: text/html; charset=UTF-8", "Content-Transfer-Encoding: base64", "", wrap76(utf8b64(mailHtml(body, "cid:" + cid))),
     `--${alt}--`, "",
-    `--${mix}`, 'Content-Type: image/jpeg; name="Chuchchon_360TRUCK_Namecard.jpg"', 'Content-Disposition: attachment; filename="Chuchchon_360TRUCK_Namecard.jpg"', "Content-Transfer-Encoding: base64", "", wrap76(card),
+    `--${rel}`, 'Content-Type: image/jpeg; name="Chuchchon_360TRUCK_Namecard.jpg"', 'Content-Disposition: inline; filename="Chuchchon_360TRUCK_Namecard.jpg"', `Content-ID: <${cid}>`, "Content-Transfer-Encoding: base64", "", wrap76(card),
+    `--${rel}--`, "",
+    `--${mix}`, `Content-Type: text/vcard; charset=UTF-8; name="${vcfName()}"`, `Content-Disposition: attachment; filename="${vcfName()}"`, "Content-Transfer-Encoding: base64", "", wrap76(utf8b64(vcard())),
     `--${mix}--`, ""
   ].join("\r\n");
   return g("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", { method: "POST", json: { raw: b64u(mime) } });
 }
 
 /* ================= Google Sheet ================= */
-const MAILTXT = { sent: "ส่งแล้ว", failed: "ส่งไม่สำเร็จ", skipped: "ไม่ได้ส่ง", queued: "รอส่ง" };
+const MAILTXT = { sent: "ส่งแล้ว", failed: "ส่งไม่สำเร็จ", skipped: "ไม่ได้ส่ง", queued: "รอส่ง", draft: "ยังไม่ส่ง" };
 const fmtDT = t => { const d = new Date(t), p = n => String(n).padStart(2, "0"); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`; };
 const tabRef = () => "'" + (S.sheetTab || "Namecards").replace(/'/g, "''") + "'";
 const SH = id => `https://sheets.googleapis.com/v4/spreadsheets/${enc(S.sheetId)}/values/`;
@@ -737,10 +805,11 @@ async function sync(){
     /* emails waiting to go */
     for (const c of D.cards) {
       if (!c.mail || c.mail.status !== "queued") continue;
-      SY.msg = "กำลังส่งอีเมลถึง " + c.email; paintCloud();
+      SY.msg = "กำลังส่งอีเมลถึง " + (c.mail.to || c.email); paintCloud();
       await renderCard();
-      try { await sendMail(c.mail.to || c.email, c.mail.subject, c.mail.body); c.mail = { status: "sent", at: Date.now(), to: c.mail.to || c.email, subject: c.mail.subject }; toast("ส่งอีเมลถึง " + c.email + " แล้ว"); }
-      catch (e) { if (e.code === "auth") throw e; c.mail = { ...c.mail, status: "failed", err: e.message }; toast("ส่งอีเมลไม่สำเร็จ: " + e.message, 7000); }
+      const to = c.mail.to || c.email; c.mailLog = c.mailLog || [];
+      try { await sendMail(to, c.mail.subject, c.mail.body); const at = Date.now(); c.mail = { ...c.mail, status: "sent", at, to, err: "" }; c.mailLog.push({ at, to, subject: c.mail.subject, ok: true }); toast("ส่งอีเมลถึง " + to + " แล้ว"); }
+      catch (e) { if (e.code === "auth") throw e; c.mail = { ...c.mail, status: "failed", err: e.message }; c.mailLog.push({ at: Date.now(), to, subject: c.mail.subject, ok: false, err: String(e.message || "") }); toast("ส่งอีเมลไม่สำเร็จ: " + e.message, 7000); }
       c.u = Date.now(); c.sheetDirty = true; touched = true; await persist(); renderList();
     }
     /* sheet */
@@ -803,7 +872,8 @@ function rr(x, y, w, h, r, ctx){ ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcT
 async function setImgSrc(kind){ const u = await photoUrl("set:" + kind); return u || (kind === "qr" ? DEF_QR : DEF_CARD); }
 async function renderCard(){
   try {
-    try { await document.fonts.load("32px Roboto"); await document.fonts.load("500 24px Roboto"); await document.fonts.load("700 24px Roboto"); } catch {}
+    try { if (!window.__qf) { const f = new FontFace("Questrial", "url(questrial.ttf)"); await f.load(); document.fonts.add(f); window.__qf = 1; } } catch {}
+    try { await document.fonts.load("700 24px Roboto"); } catch {}
     const base = await loadImg(S.cardImg ? await setImgSrc("card") : DEF_CARD).catch(() => loadImg(DEF_CARD));
     const cv = $("#cv"), W = base.naturalWidth, H = base.naturalHeight, k = W / 864, ctx = cv.getContext("2d");
     cv.width = W; cv.height = H; ctx.drawImage(base, 0, 0);
@@ -812,25 +882,25 @@ async function renderCard(){
       ctx.fillStyle = "#fff"; rr(100 * k, 346 * k, 336 * k, 336 * k, 26 * k, ctx); ctx.fill();
       ctx.lineWidth = 6 * k; ctx.strokeStyle = "#d7e217"; ctx.stroke();
       ctx.drawImage(q, 118 * k, 364 * k, 300 * k, 300 * k);
-      ctx.fillStyle = "#d7e217"; ctx.font = `500 ${24 * k}px Roboto, Arial, sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillStyle = "#d7e217"; ctx.font = `${25 * k}px Questrial, Arial, sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
       ctx.fillText(S.qrCaption || "", 268 * k, 712 * k, 420 * k);
     }
     if (S.showRows) {
       const row = (y, kind, text) => {
         if (!text) return;
-        ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(333 * k, y * k, 34 * k, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(333 * k, y * k, 35.5 * k, 0, Math.PI * 2); ctx.fill();
         ctx.fillStyle = "#151515"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
         if (kind === "line") {
           rr(311 * k, (y - 15) * k, 44 * k, 28 * k, 9 * k, ctx); ctx.fill();
           ctx.beginPath(); ctx.moveTo(322 * k, (y + 11) * k); ctx.lineTo(318 * k, (y + 20) * k); ctx.lineTo(330 * k, (y + 12) * k); ctx.fill();
           ctx.fillStyle = "#fff"; ctx.font = `700 ${11 * k}px Roboto, Arial, sans-serif`; ctx.fillText("LINE", 333 * k, (y - 1) * k);
         } else { ctx.font = `700 ${42 * k}px Roboto, Arial, sans-serif`; ctx.fillText("f", 334 * k, (y + 3) * k); }
-        ctx.fillStyle = "#fff"; ctx.textAlign = "left"; ctx.font = `400 ${31 * k}px Roboto, Arial, sans-serif`; ctx.fillText(text, 397 * k, (y + 1) * k, 440 * k);
+        ctx.fillStyle = "#fff"; ctx.textAlign = "left"; ctx.font = `${34 * k}px Questrial, Arial, sans-serif`; ctx.fillText(text, 397 * k, (y + 1) * k, 450 * k);
       };
       row(1234, "line", S.lineId ? "LINE: " + S.lineId : "");
       row(1318, "fb", fbShort(S.facebook));
     }
-    cardJpeg = cv.toDataURL("image/jpeg", .88);
+    cardJpeg = cv.toDataURL("image/jpeg", .9);
     $("#cardImg").src = cardJpeg;
   } catch { }
 }
@@ -1345,7 +1415,17 @@ function drawQueue(){
   q.innerHTML = `<div class="muted">รอตรวจ ${drafts.length} ใบ</div>` + drafts.map(d => `<button type="button" class="qitem ${cur === d ? "on" : ""}" data-d="${d.id}"><img src="${d.url || ""}" alt=""><div><b>${esc(draftName(d) || "นามบัตร")}</b><span class="muted">${{ waiting: "รอคิวอ่าน", reading: "กำลังอ่าน…", ready: "พร้อมตรวจ", error: "อ่านไม่ได้ กรอกเอง" }[d.status] || ""}</span></div><span class="muted">›</span></button>`).join("");
 }
 $("#queue").addEventListener("click", e => { const b = e.target.closest("[data-d]"); if (!b) return; stash(); openDraft(drafts.find(d => d.id === b.dataset.d)); });
-function stash(){ if (cur && cur.status !== "edit") { cur.form = readForm(); cur.mail = { lang: $("#mailLang").value, subj: $("#mailSubj").value, body: $("#mailBody").value, on: $("#sendMail").checked, touched: $("#mailBody").dataset.touched }; saveDrafts(); } }
+/* auto save: whatever is on screen is kept on the phone within half a second, and at once when the app goes to the background */
+const plainDraft = d => ({ ...d, blob: undefined, orig: undefined, selfie: undefined, url: undefined, selfieUrl: undefined, gpsP: undefined });
+function stash(){
+  if (!cur) return; cur.form = readForm(); cur.mailOn = $("#sendMail").checked;
+  if (cur.status === "edit") IDB.put("kv", "editdraft", plainDraft(cur)).catch(() => {}); else saveDrafts();
+}
+let asT = 0; const autosave = () => { clearTimeout(asT); asT = setTimeout(stash, 400); };
+$("#form").addEventListener("input", autosave); $("#form").addEventListener("change", autosave);
+const flushAll = () => { clearTimeout(asT); stash(); mailFlush(); };
+document.addEventListener("visibilitychange", () => { if (document.hidden) flushAll(); });
+window.addEventListener("pagehide", flushAll);
 function readForm(){ const f = $("#form"), r = {}; FIELDS.forEach(k => r[k] = f[k].value.trim()); return r; }
 let sessionPlace = { day: "", v: "" };
 function todayPlace(){ const today = new Date().toDateString(); const c = [...D.cards].sort((a, b) => b.createdAt - a.createdAt).find(c => c.place && new Date(c.createdAt).toDateString() === today); return c ? c.place : (sessionPlace.day === today ? sessionPlace.v : ""); }
@@ -1356,19 +1436,17 @@ function openDraft(d){
   $("#editor").hidden = false; const f = $("#form"); f.reset();
   $("#previewImg").removeAttribute("src");
   if (d.url) $("#previewImg").src = d.url; else if (d.photoKey) photoUrl(d.photoKey).then(u => { if (u) $("#previewImg").src = u; });
-  if (d.form) FIELDS.forEach(k => f[k].value = d.form[k] || "");
+  if (d.form) { FIELDS.forEach(k => f[k].value = d.form[k] || ""); if (d.ocr && d.status !== "edit") fillFromOcr(d, true); if (!f.place.value) f.place.value = todayPlace(); }
   else { if (d.ocr) fillFromOcr(d, true); f.place.value = todayPlace(); }
-  if (d.mail) { $("#mailLang").value = d.mail.lang; $("#sendMail").checked = d.mail.on; $("#mailSubj").value = d.mail.subj; $("#mailBody").value = d.mail.body; $("#mailBody").dataset.touched = d.mail.touched || ""; }
-  else { $("#sendMail").checked = d.status !== "edit" && S.mailDefault; $("#mailLang").value = (d.ocr && d.ocr.lang === "en") ? "en" : "th"; fillMail(); }
-  if (d.status === "edit" && !d.mail) fillMail();
+  if (d.mailOn != null) $("#sendMail").checked = d.mailOn;
+  else if (d.status === "edit") { const c0 = D.cards.find(c => c.id === d.docId); $("#sendMail").checked = !!(c0 && c0.mail && c0.mail.status !== "skipped"); }
+  else $("#sendMail").checked = S.mailDefault;
   drawSelfie(); drawLoc(); drawOcr(); drawQueue(); drawPlaces(); drawTools();
   if (d.status === "edit" && d.photoKey && !d.orig) loadSavedOrig(d);
 }
 function fillFromOcr(d, quiet, force){
   const f = $("#form"), r = d.ocr || {};
   for (const k of FIELDS) if (k !== "place" && k !== "note" && typeof r[k] === "string" && (!f[k].value || (force && !f[k].dataset.user && r[k].trim()))) f[k].value = r[k].trim();
-  if (r.lang) $("#mailLang").value = r.lang === "en" ? "en" : "th";
-  if (!$("#mailBody").dataset.touched) fillMail();
   if (!quiet) toast(r.email || r.name_th || r.name_en ? "อ่านนามบัตรแล้ว ตรวจแล้วกดบันทึก" : "อ่านได้ไม่ครบ ช่วยกรอกเพิ่ม");
 }
 
@@ -1397,7 +1475,7 @@ function drawPlaces(){
   $("#placeList").innerHTML = seen.map(p => `<option value="${esc(p)}"></option>`).join("");
   $("#placeChips").innerHTML = seen.map(p => `<button type="button" data-p="${esc(p)}">${esc(p)}</button>`).join("");
 }
-$("#placeChips").addEventListener("click", e => { const b = e.target.closest("[data-p]"); if (!b) return; $("#form").place.value = b.dataset.p; if (!$("#mailBody").dataset.touched) fillMail(); });
+$("#placeChips").addEventListener("click", e => { const b = e.target.closest("[data-p]"); if (!b) return; $("#form").place.value = b.dataset.p; autosave(); });
 
 /* ================= selfie ================= */
 function drawSelfie(){
@@ -1410,16 +1488,15 @@ $("#selfieDel").addEventListener("click", () => { if (!cur) return; cur.selfie =
 
 /* ================= email text & chat text ================= */
 function firstName(s){ return String(s || "").replace(/^(คุณ|นาย|นางสาว|นาง|ดร\.|Mr\.?|Mrs\.?|Ms\.?|Dr\.?)\s*/i, "").trim().split(/\s+/)[0] || ""; }
-function fillMail(){
-  const f = $("#form"), en = $("#mailLang").value === "en";
-  const name = en ? (firstName(f.name_en.value) || firstName(f.name_th.value) || "there") : (firstName(f.name_th.value) || firstName(f.name_en.value));
-  const company = f.company.value.trim() || (en ? "your team" : "บริษัทของคุณ"), place = f.place.value.trim().replace(/^ที่\s*/, "") || (en ? "the event" : "งาน");
+const langOf = c => c.mail && c.mail.lang ? c.mail.lang : (/[\u0E00-\u0E7F]/.test((c.name_th || "") + (c.company || "")) ? "th" : (c.name_en || c.company ? "en" : "th"));
+/* the nice-to-meet-you email for one person, from the templates in Settings */
+function composeMail(c, lang){
+  const en = lang === "en";
+  const name = en ? (firstName(c.name_en) || firstName(c.name_th) || "there") : (firstName(c.name_th) || firstName(c.name_en));
+  const company = String(c.company || "").trim() || (en ? "your team" : "บริษัทของคุณ"), place = String(c.place || "").trim().replace(/^ที่\s*/, "") || (en ? "the event" : "งาน");
   const fill = t => String(t || "").replaceAll("{name}", name).replaceAll("{company}", company).replaceAll("{place}", place).replaceAll("{signature}", en ? S.sigEn : S.sigTh);
-  $("#mailSubj").value = fill(en ? S.subjEn : S.subjTh); $("#mailBody").value = fill(en ? S.bodyEn : S.bodyTh); $("#mailBody").dataset.touched = "";
+  return { subject: fill(en ? S.subjEn : S.subjTh), body: fill(en ? S.bodyEn : S.bodyTh) };
 }
-$("#mailLang").addEventListener("change", fillMail);
-["#mailBody", "#mailSubj"].forEach(s => $(s).addEventListener("input", () => $("#mailBody").dataset.touched = "1"));
-["name_th","name_en","company","place"].forEach(k => $("#form")[k].addEventListener("change", () => { if (!$("#mailBody").dataset.touched) fillMail(); }));
 function chatText(c){
   const en = !/[฀-๿]/.test((c.name_th || "") + (c.company || "")) && !!(c.name_en || c.company);
   const name = en ? (firstName(c.name_en) || firstName(c.name_th) || "there") : (firstName(c.name_th) || firstName(c.name_en));
@@ -1433,14 +1510,14 @@ $("#formChat").addEventListener("click", e => { const b = e.target.closest("[dat
 
 /* ================= save ================= */
 $("#form").addEventListener("submit", async e => {
-  e.preventDefault(); if (!cur) return;
+  e.preventDefault(); if (!cur) return; clearTimeout(asT);
   const err = $("#formErr"), fail = m => { err.textContent = m; err.hidden = false; toast(m, 6000); }; err.hidden = true;
   const rec = readForm(), d = cur, isEdit = d.status === "edit";
   if (!rec.name_th && !rec.name_en && !rec.company) return fail("ใส่ชื่อหรือบริษัทอย่างน้อยหนึ่งช่อง");
   if (!rec.place) { $("#form").place.focus(); return fail("ใส่ว่าเจอกันที่ไหน / งานอะไร ก่อนบันทึก"); }
   if (d.gps && d.locOk === null) { $("#locLine").scrollIntoView({ block: "center" }); return fail("ยืนยันตำแหน่ง GPS ก่อน — กด “ใช่” หรือ “ไม่ใช่”"); }
   const wantMail = $("#sendMail").checked;
-  if (wantMail && !validEmail(rec.email)) return fail("อีเมลผู้รับดูไม่ถูกต้อง — แก้อีเมล หรือปิดสวิตช์ส่งอีเมล");
+  if (wantMail && rec.email && !validEmail(rec.email)) return fail("อีเมลผู้รับดูไม่ถูกต้อง — แก้อีเมล หรือปิดสวิตช์ส่งอีเมล");
   const btn = $("#saveBtn"); btn.disabled = true; btn.textContent = "กำลังบันทึก…";
   try {
     const base = isEdit ? (D.cards.find(c => c.id === d.docId) || {}) : {};
@@ -1453,22 +1530,90 @@ $("#form").addEventListener("submit", async e => {
     }
     if (d.selfie) { await blobPut(id + ":selfie", d.selfie); urlCache.delete(id + ":selfie"); c.selfie = { local: true }; }
     else if (d.selfieRemoved) c.selfie = null;
-    if (wantMail) c.mail = { status: "queued", to: rec.email, subject: $("#mailSubj").value.trim(), body: $("#mailBody").value };
-    else if (!base.mail) c.mail = { status: "skipped" };
+    if (wantMail) {
+      const m = base.mail && base.mail.status !== "skipped" ? base.mail : null;
+      if (!m) { const lang = (d.ocr && d.ocr.lang === "en") ? "en" : langOf(c); c.mail = { status: "draft", to: rec.email, lang, ...composeMail(c, lang) }; }
+      else if (m.status !== "sent" && m.status !== "queued" && !m.touched) { c.mail = { ...m, to: rec.email, ...composeMail(c, m.lang || langOf(c)) }; }   /* name or place changed: rewrite an untouched draft */
+      else c.mail = { ...m, to: m.to && m.status === "sent" ? m.to : rec.email };
+    } else if (!base.mail) c.mail = { status: "skipped" };
     const i = D.cards.findIndex(x => x.id === id); if (i >= 0) D.cards[i] = c; else D.cards.push(c);
     await persist();
+    if (isEdit) IDB.del("kv", "editdraft").catch(() => {});
     blobPut("draft:" + d.id, null); IDB.del("blobs", "draft:" + d.id).catch(() => {}); IDB.del("blobs", "draftself:" + d.id).catch(() => {}); IDB.del("blobs", "draftorig:" + d.id).catch(() => {});
     sessionPlace = { day: new Date().toDateString(), v: rec.place };
     drafts = drafts.filter(x => x !== d); saveDrafts();
     renderList(); drawPlaces();
-    toast((isEdit ? "แก้ไขเรียบร้อย" : "บันทึกเรียบร้อย") + (wantMail ? (token() ? " · กำลังส่งอีเมล…" : " · อีเมลจะส่งเมื่อเข้าสู่ระบบ Google") : ""), 4500);
+    const reviewMail = wantMail && validEmail(c.mail.to) && (c.mail.status === "draft" || c.mail.status === "failed");
+    if (!reviewMail) toast(isEdit ? "แก้ไขเรียบร้อย" : "บันทึกเรียบร้อย", 3000);
     const next = drafts.find(x => x.status === "ready" || x.status === "error") || drafts[0];
     if (next) openDraft(next); else { openDraft(null); go("list"); }
+    if (reviewMail) openMail(c.id, isEdit ? "แก้ไขเรียบร้อย · ตรวจอีเมลก่อนส่ง" : "บันทึกรายชื่อแล้ว · ตรวจอีเมลก่อนส่ง");
     syncSoon(300);
   } catch { fail("บันทึกไม่สำเร็จ ลองอีกครั้ง"); }
   finally { btn.disabled = false; btn.textContent = "บันทึก"; }
 });
-$("#skipBtn").addEventListener("click", () => { if (!cur) return; const d = cur; drafts = drafts.filter(x => x !== d); saveDrafts(); IDB.del("blobs", "draft:" + d.id).catch(() => {}); openDraft(drafts.find(x => x.status === "ready") || drafts[0]); });
+$("#skipBtn").addEventListener("click", () => { if (!cur) return; const d = cur; if (d.status === "edit") IDB.del("kv", "editdraft").catch(() => {}); drafts = drafts.filter(x => x !== d); saveDrafts(); IDB.del("blobs", "draft:" + d.id).catch(() => {}); openDraft(drafts.find(x => x.status === "ready") || drafts[0]); });
+
+/* ================= review the email before it goes ================= */
+const fmtWhen = t => new Date(t).toLocaleString("th-TH", { day: "numeric", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit" });
+function histHtml(c, max){
+  const h = (c.mailLog || []).slice().reverse(); if (!h.length) return "";
+  return `<div class="hlist">${h.slice(0, max || 99).map(x => `<div class="hist"><span>${esc(fmtWhen(x.at))} · ${esc(x.to || "")}</span><b class="${x.ok ? "ok" : "bad"}" title="${esc(x.err || "")}">${x.ok ? "ส่งแล้ว" : "ไม่สำเร็จ"}</b></div>`).join("")}</div>`;
+}
+let mailCur = null, mailT = 0;
+function mailRead(){ return { to: $("#mTo").value.trim(), subject: $("#mSubj").value, body: $("#mBody").value }; }
+/* the open email is saved into the record as you type (status stays "not sent" until you press send) */
+function mailFlush(){
+  clearTimeout(mailT); if (!mailCur) return; const c = D.cards.find(x => x.id === mailCur.id); if (!c) return;
+  const v = mailRead(), m = c.mail || {};
+  if (v.to === (m.to || "") && v.subject === (m.subject || "") && v.body === (m.body || "") && mailCur.lang === m.lang) return;
+  c.mail = { ...m, ...v, lang: mailCur.lang, touched: mailCur.touched || m.touched, status: m.status === "sent" || m.status === "queued" ? m.status : (m.status === "failed" ? "failed" : "draft") };
+  if (m.status === "sent") c.mail.status = "sent";
+  c.u = Date.now(); persist();
+}
+function mailPreview(){ const v = mailRead(); $("#mPrev").innerHTML = mailHtml(v.body, cardJpeg || "namecard.jpg"); }
+function mailLangPaint(){ $$("#mLang button").forEach(b => b.classList.toggle("on", b.dataset.l === mailCur.lang)); }
+async function openMail(id, note){
+  const c = D.cards.find(x => x.id === id); if (!c) return;
+  if (!cardJpeg) await renderCard();
+  const m = c.mail || {}, lang = m.lang || langOf(c);
+  /* a sent email opens as a fresh copy to send again; an unsent one opens as you left it */
+  const keep = m.subject && m.body && m.status !== "sent" && m.status !== "skipped";
+  const t = keep ? { subject: m.subject, body: m.body } : composeMail(c, lang);
+  mailCur = { id, lang, touched: keep ? !!m.touched : false };
+  $("#mTo").value = (m.status !== "sent" && m.to) || c.email || ""; $("#mFrom").value = S.account || S.email;
+  $("#mSubj").value = t.subject; $("#mBody").value = t.body; $("#mCard").src = cardJpeg || "namecard.jpg"; $("#mVcf").textContent = vcfName();
+  mailLangPaint(); mailPreview();
+  $("#mHist").innerHTML = (c.mailLog || []).length ? `<div class="sec">ประวัติการส่ง</div><div class="group">${histHtml(c)}</div>` : "";
+  $("#mMsg").textContent = note || (m.status === "failed" ? "ครั้งก่อนส่งไม่สำเร็จ: " + (m.err || "") : m.status === "sent" ? "ส่งไปแล้วเมื่อ " + fmtWhen(m.at) + " · ส่งซ้ำได้" : "แก้ได้เลย ระบบเก็บให้อัตโนมัติ");
+  $("#mailSheet").classList.add("on"); $("#mailSheet .body").scrollTop = 0;
+  if (keep || m.status === "sent") mailFlush(); else { c.mail = { ...m, to: $("#mTo").value, lang, ...t, status: "draft" }; persist(); }
+}
+["#mTo", "#mSubj", "#mBody"].forEach(sel => $(sel).addEventListener("input", () => { if (!mailCur) return; if (sel !== "#mTo") mailCur.touched = true; clearTimeout(mailT); mailT = setTimeout(() => { mailFlush(); mailPreview(); }, 400); }));
+$("#mLang").addEventListener("click", e => {
+  const b = e.target.closest("[data-l]"); if (!b || !mailCur || b.dataset.l === mailCur.lang) return;
+  const c = D.cards.find(x => x.id === mailCur.id); if (!c) return;
+  if (mailCur.touched && b.dataset.sure !== "1") { $$("#mLang button").forEach(x => delete x.dataset.sure); b.dataset.sure = "1"; $("#mMsg").textContent = "ข้อความที่แก้ไว้จะถูกแทนด้วยแบบร่างภาษาใหม่ — แตะอีกครั้งเพื่อยืนยัน"; return; }
+  delete b.dataset.sure; mailCur.lang = b.dataset.l; mailCur.touched = false;
+  const t = composeMail(c, mailCur.lang); $("#mSubj").value = t.subject; $("#mBody").value = t.body; mailLangPaint(); mailPreview(); mailFlush(); $("#mMsg").textContent = "เปลี่ยนเป็น" + (mailCur.lang === "en" ? "ภาษาอังกฤษ" : "ภาษาไทย") + "แล้ว";
+});
+function mailClose(later){
+  if (!mailCur) return; mailFlush(); const c = D.cards.find(x => x.id === mailCur.id); mailCur = null; $("#mailSheet").classList.remove("on");
+  if (later && c && c.mail && c.mail.status !== "sent") toast("เก็บอีเมลไว้แล้ว · ส่งได้ทีหลังจากหน้ารายชื่อ", 4000);
+  renderList();
+}
+async function mailSend(){
+  if (!mailCur) return; const v = mailRead();
+  if (!validEmail(v.to)) { $("#mMsg").textContent = "อีเมลผู้รับดูไม่ถูกต้อง"; $("#mTo").focus(); return; }
+  if (!v.subject.trim() || !v.body.trim()) { $("#mMsg").textContent = "ใส่หัวข้อและข้อความก่อนส่ง"; return; }
+  const c = D.cards.find(x => x.id === mailCur.id); if (!c) return;
+  c.mail = { ...(c.mail || {}), ...v, subject: v.subject.trim(), lang: mailCur.lang, touched: mailCur.touched, status: "queued", err: "" }; c.u = Date.now(); c.sheetDirty = true; await persist();
+  mailCur = null; $("#mailSheet").classList.remove("on"); renderList();
+  if (token()) { toast("กำลังส่งอีเมลถึง " + v.to + "…", 3000); syncSoon(100); } else toast("อีเมลจะส่งทันทีที่เข้าสู่ระบบ Google (ปุ่ม ☁ มุมบน)", 5000);
+}
+$("#mSend").addEventListener("click", mailSend); $("#mSend2").addEventListener("click", mailSend);
+$("#mLater").addEventListener("click", () => mailClose(true)); $("#mLater2").addEventListener("click", () => mailClose(true));
+$("#mailSheet").addEventListener("click", e => { if (e.target.id === "mailSheet") mailClose(true); });
 
 /* ================= list ================= */
 const nameOf = c => c.name_th || c.name_en || c.company || "ไม่มีชื่อ";
@@ -1477,14 +1622,20 @@ function mailTag(m){
   if (!m || m.status === "skipped") return '<span class="tag">ไม่ได้ส่งอีเมล</span>';
   if (m.status === "sent") return '<span class="tag ok">ส่งอีเมลแล้ว</span>';
   if (m.status === "failed") return '<span class="tag bad">ส่งอีเมลไม่สำเร็จ</span>';
+  if (m.status === "draft") return '<span class="tag warn">ยังไม่ส่งอีเมล</span>';
   return '<span class="tag">รอส่งอีเมล</span>';
 }
 const thumb = c => c.photo ? `<img data-ph="${esc(c.id)}:photo" ${c.photo.d ? `data-drive="${esc(c.photo.d)}"` : ""} alt="" loading="lazy">` : `<img alt="">`;
+/* has an email address but nothing has gone out yet */
+const unsent = c => validEmail(c.email) && !(c.mail && (c.mail.status === "sent" || c.mail.status === "queued")) && !(c.mailLog || []).some(x => x.ok);
+let listFilter = "";
+$("#filt").addEventListener("click", e => { const b = e.target.closest("[data-f]"); if (!b) return; listFilter = b.dataset.f; $$("#filt button").forEach(x => x.classList.toggle("on", x === b)); renderList(); });
 function renderList(){
   
   const q = $("#q").value.trim().toLowerCase();
-  const rows = [...D.cards].sort((a, b) => b.createdAt - a.createdAt).filter(c => !q || FIELDS.some(k => String(c[k] || "").toLowerCase().includes(q)));
-  if (!rows.length) { $("#list").innerHTML = `<div class="empty">${D.cards.length ? "<b>ไม่พบผลลัพธ์</b>ลองค้นด้วยคำอื่น" : "<b>ยังไม่มีนามบัตร</b>แตะ “สแกน” ด้านล่างเพื่อเริ่ม"}</div>`; return; }
+  const un = D.cards.filter(unsent).length, fb = $('#filt [data-f="unsent"]'); fb.textContent = "ยังไม่ส่งอีเมล" + (un ? ` (${un})` : "");
+  const rows = [...D.cards].sort((a, b) => b.createdAt - a.createdAt).filter(c => (!listFilter || unsent(c)) && (!q || FIELDS.some(k => String(c[k] || "").toLowerCase().includes(q))));
+  if (!rows.length) { $("#list").innerHTML = `<div class="empty">${listFilter && !q ? "<b>ส่งอีเมลครบแล้ว</b>ทุกคนที่มีอีเมลได้รับอีเมลแล้ว" : D.cards.length ? "<b>ไม่พบผลลัพธ์</b>ลองค้นด้วยคำอื่น" : "<b>ยังไม่มีนามบัตร</b>แตะ “สแกน” ด้านล่างเพื่อเริ่ม"}</div>`; return; }
   let last = "", out = "";
   for (const c of rows) {
     const day = dateOf(c.createdAt); if (day !== last) { out += `<div class="day">${esc(day)} · ${rows.filter(x => dateOf(x.createdAt) === day).length} คน</div>`; last = day; }
@@ -1522,12 +1673,12 @@ function openDetail(id){
     </div>
     <div class="fields">
       ${field("เจอกันที่", c.place)}${field("วันที่", dateOf(c.createdAt))}${mapUrl ? field("พิกัด", Number(c.lat).toFixed(5) + ", " + Number(c.lng).toFixed(5), mapUrl) : ""}${field("บันทึก", c.note)}
-      <div class="field"><small>อีเมลยินดีที่ได้รู้จัก</small><div>${mailTag(c.mail)}${c.mail && c.mail.at ? ` <span class="muted">${esc(new Date(c.mail.at).toLocaleString("th-TH"))}</span>` : ""}</div></div>
+      <div class="field"><small>อีเมลยินดีที่ได้รู้จัก</small><div>${mailTag(c.mail)}${c.mail && c.mail.status === "sent" && c.mail.at ? ` <span class="muted">${esc(fmtWhen(c.mail.at))}</span>` : ""}</div>${histHtml(c, 3)}</div>
     </div>
     ${c.photo && c.selfie ? `<div class="photos"><img ${ph("photo")} alt="รูปนามบัตร"></div>` : ""}
     ${c.photo && c.photo.old && safeUrl(c.photo.url) ? `<p class="foot"><a class="tint-text" href="${esc(c.photo.url)}" target="_blank" rel="noopener">เปิดรูปนามบัตรใน Google Drive</a></p>` : ""}
     <div class="group" style="margin-top:16px">
-      ${validEmail(c.email) ? `<button class="cell" data-act="mail"><i class="ic" style="background:var(--lime);color:var(--lime-ink)">✉</i><span>${c.mail && c.mail.status === "sent" ? "ส่งอีเมลอีกครั้ง" : c.mail && c.mail.status === "queued" ? "รอส่งอยู่ · ส่งเดี๋ยวนี้" : "ส่งอีเมลยินดีที่ได้รู้จัก"}</span></button>` : ""}
+      ${validEmail(c.email) ? `<button class="cell" data-act="mail"><i class="ic" style="background:var(--lime);color:var(--lime-ink)">✉</i><span>${c.mail && c.mail.status === "sent" ? "ส่งอีเมลอีกครั้ง" : c.mail && c.mail.status === "queued" ? "รอส่งอยู่ · ส่งเดี๋ยวนี้" : c.mail && c.mail.status === "failed" ? "ส่งอีเมลอีกครั้ง (ครั้งก่อนไม่สำเร็จ)" : "ตรวจและส่งอีเมลยินดีที่ได้รู้จัก"}</span></button>` : ""}
       <button class="cell" data-act="chat"><i class="ic" style="background:#636366">⧉</i><span>คัดลอกข้อความแชท</span></button>
       <a class="cell" href="${esc(chatHref("wa", c))}" target="_blank" rel="noopener"><i class="ic" style="background:#25D366">W</i><span>WhatsApp</span>${waNumber(c) ? "" : "<em>เลือกผู้รับเอง</em>"}</a>
       <button class="cell" data-act="copy"><i class="ic" style="background:#0A84FF">⎘</i><span>คัดลอกข้อมูลติดต่อ</span></button>
@@ -1558,13 +1709,8 @@ function openDetail(id){
       $("#detSheet").classList.remove("on"); renderList(); toast("ลบแล้ว (รูปใน Google Drive ยังอยู่)"); syncSoon();
     }
     if (a.dataset.act === "mail") {
-      const f = $("#form"), saved = readForm(), keep = { l: $("#mailLang").value, s: $("#mailSubj").value, b: $("#mailBody").value, t: $("#mailBody").dataset.touched };
-      FIELDS.forEach(k => f[k].value = c[k] || ""); $("#mailLang").value = /[฀-๿]/.test((c.name_th || "") + (c.company || "")) ? "th" : "en"; fillMail();
-      const subject = (c.mail && c.mail.subject) || $("#mailSubj").value, body = (c.mail && c.mail.body) || $("#mailBody").value;
-      FIELDS.forEach(k => f[k].value = saved[k]); $("#mailLang").value = keep.l; $("#mailSubj").value = keep.s; $("#mailBody").value = keep.b; $("#mailBody").dataset.touched = keep.t || "";
-      c.mail = { status: "queued", to: c.email, subject, body }; c.u = Date.now(); c.sheetDirty = true; await persist();
-      if (!token()) { msg.textContent = "จะส่งเมื่อเข้าสู่ระบบ Google (ปุ่ม ☁ มุมบน)"; renderList(); return; }
-      msg.textContent = "กำลังส่ง…"; await sync(); openDetail(c.id);
+      if (c.mail && c.mail.status === "queued" && token()) { msg.textContent = "กำลังส่ง…"; await sync(); return openDetail(c.id); }
+      $("#detSheet").classList.remove("on"); return openMail(c.id);
     }
   };
 }
@@ -1624,7 +1770,7 @@ $("#testKey").addEventListener("click", async () => {
   catch (x) { el.textContent = x.code === "busy" || x.code === "rate" ? "key ใช้ได้ แต่ Gemini ทุกรุ่นมีคนใช้เยอะตอนนี้ — ลองใหม่อีกสักครู่ (กดบันทึกการตั้งค่าได้เลย)" : (OCR_ERR[x.code] || "ใช้ไม่ได้") + (x.message ? " · " + x.message : ""); }
   Object.assign(S, keep);
 });
-function applySettings(){ fillSettings(); drawLinks(); renderCard(); $("#mailFrom").value = S.account || S.email; paintCloud(); }
+function applySettings(){ fillSettings(); drawLinks(); renderCard(); $("#mFrom").value = S.account || S.email; paintCloud(); }
 
 /* ================= boot ================= */
 (async () => {
@@ -1639,7 +1785,11 @@ function applySettings(){ fillSettings(); drawLinks(); renderCard(); $("#mailFro
       drafts.push({ ...x, blob: b, orig: ob || null, url: URL.createObjectURL(b), selfie: sb || null, selfieUrl: sb ? URL.createObjectURL(sb) : null, status: x.status === "reading" ? "waiting" : x.status }); }
   } catch {}
   applySettings(); renderList(); drawPlaces();
-  if (drafts.length) { go("scan"); openDraft(drafts[0]); pumpOcr(); }
+  let ed = null; try { ed = await IDB.get("kv", "editdraft"); } catch {}
+  if (ed && D.cards.some(c => c.id === ed.docId)) {
+    const b = ed.photoChanged ? await blobGet("draft:" + ed.id) : null; if (b) { ed.blob = b; ed.url = URL.createObjectURL(b); }
+    go("scan"); openDraft(ed); toast("เปิดงานแก้ไขที่ค้างไว้ให้แล้ว", 4000); pumpOcr();
+  } else if (drafts.length) { go("scan"); openDraft(drafts[0]); pumpOcr(); }
   if (authErr) toast(authErr, 6000);
   if (token()) sync();
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});

@@ -1,5 +1,5 @@
 /* CardDrop: open offline from the last copy; always try the network first so updates arrive */
-const C = "carddrop-v1", SHELL = ["./", "index.html", "namecard.jpg", "line-qr.png", "icon-192.png", "manifest.webmanifest"];
+const C = "carddrop-v2", SHELL = ["./", "index.html", "namecard.jpg", "line-qr.png", "icon-192.png", "manifest.webmanifest", "questrial.ttf"];
 self.addEventListener("install", e => { self.skipWaiting(); e.waitUntil(caches.open(C).then(c => c.addAll(SHELL)).catch(() => {})); });
 self.addEventListener("activate", e => e.waitUntil(self.clients.claim()));
 self.addEventListener("fetch", e => {
