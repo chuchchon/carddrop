@@ -365,6 +365,7 @@ form{display:block;margin-top:6px}
     <div class="filt" id="filt"><button type="button" data-f="" class="on">ทั้งหมด</button><button type="button" data-f="unsent">ยังไม่ส่งอีเมล</button></div>
     <div class="quick" id="gLinks"></div>
     <div class="list" id="list"></div>
+    <p class="foot" style="text-align:center;margin-top:24px">CardDrop <span id="appV"></span></p>
   </section>
 
   <!-- SETTINGS -->
@@ -540,7 +541,7 @@ const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 
 const toast = (m, ms = 3200) => { const t = $("#toast"); t.textContent = m; t.classList.add("on"); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove("on"), ms); };
 const FIELDS = ["name_th","name_en","title","company","email","mobile","phone","line","website","address","place","note"];
 const validEmail = e => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e || "");
-const DEF_CARD = "namecard.jpg", DEF_QR = "line-qr.png";
+const DEF_CARD = "namecard.jpg", DEF_QR = "line-qr.png", APP_V = "27 พ.ย. 69 · 5", DET_V = 4;
 
 const DEF = {
   nameTh: "ชัชชน (Sea)", nameEn: "Chuchchon Saenjaibal (Sea)", title: "Chief Executive Officer", company: "360TRUCK & 360TECHX",
@@ -1070,7 +1071,7 @@ const Scan = (() => {
     /* threshold from the picture itself */
     const sample = []; for (let i = 0; i < n; i += 3) if (mag[i] > 0) sample.push(mag[i]);
     sample.sort((a, b) => a - b);
-    const tEdge = Math.max(10, sample[Math.floor(sample.length * .86)] || 10), tSide = Math.max(7, tEdge * .55);
+    const P = { pv: .7, ps: .7, minS: 5 }, tEdge = Math.max(6, sample[Math.floor(sample.length * P.pv)] || 6), tSide = Math.max(P.minS, tEdge * P.ps);
     /* Hough vote, each edge pixel only for lines along its own direction */
     const NT = 180, diag = Math.ceil(Math.hypot(w, h)), NR = 2 * diag + 1, acc = new Float32Array(NT * NR);
     const cs = new Float32Array(NT), sn = new Float32Array(NT); for (let t = 0; t < NT; t++) { cs[t] = Math.cos(t * Math.PI / NT); sn[t] = Math.sin(t * Math.PI / NT); }
@@ -1085,7 +1086,7 @@ const Scan = (() => {
     }
     /* strongest separate lines */
     const peaks = [];
-    for (let t = 0; t < NT; t++) for (let r = 1; r < NR - 1; r++) { const v = acc[t * NR + r]; if (v > tEdge * 18) peaks.push([v, t, r - diag]); }
+    for (let t = 0; t < NT; t++) for (let r = 1; r < NR - 1; r++) { const v = acc[t * NR + r]; if (v > tEdge * 14) peaks.push([v, t, r - diag]); }
     peaks.sort((a, b) => b[0] - a[0]);
     const lines = [];
     for (const p of peaks) {
@@ -1136,7 +1137,7 @@ const Scan = (() => {
       if (Math.abs(da - db) < Math.min(w, h) * .12 && Math.sign(da) === Math.sign(db)) continue;
       pairs.push([a, b]);
     }
-    const mx = w * .04, my = h * .04;
+    const mx = w * .04, my = h * .04, mx0 = mx, my0 = my; let keptOld = false;
     for (let i = 0; i < pairs.length; i++) for (let j = i + 1; j < pairs.length; j++) {
       const [a, b] = pairs[i], [e, f] = pairs[j];
       if (dirDiff(a, e) < 40) continue;
@@ -1150,8 +1151,26 @@ const Scan = (() => {
       /* a believable outline from the colour method that holds the line result inside it: the lines found a stripe or photo printed on the card */
       const inside = (q, P) => { const cx = q.reduce((s, p) => s + p[0], 0) / 4, cy = q.reduce((s, p) => s + p[1], 0) / 4, Q = q.map(p => [cx + (p[0] - cx) * 1.04, cy + (p[1] - cy) * 1.04]);
         return P.every(pt => { let sg = 0; for (let i = 0; i < 4; i++) { const a = Q[i], b = Q[(i + 1) % 4], z = Math.sign((b[0] - a[0]) * (pt[1] - a[1]) - (b[1] - a[1]) * (pt[0] - a[0])); if (!z) continue; if (!sg) sg = z; else if (z !== sg) return false; } return true; }); };
-      if (convex(oq) && oa > .05 && oa < .88 && (!best || (inside(oq, best) && area(best) < area(oq) * .8))) { best = oq; bestS = Math.max(bestS, .5); }
+      if (convex(oq) && oa > .05 && oa < .88 && (!best || (inside(oq, best) && area(best) < area(oq) * .93))) { best = oq; bestS = Math.max(bestS, .5); keptOld = true; }
       else if (s > bestS) { bestS = s; best = oq; }
+    }
+    /* polish: slide and tilt each edge a little and keep the position that fits best (catches faint edges, e.g. a white card on a white table) */
+    if (best && !keptOld) {
+      const lineOf = (a, b) => { let th = Math.atan2(b[0] - a[0], -(b[1] - a[1])); return { c: Math.cos(th), s: Math.sin(th), r: a[0] * Math.cos(th) + a[1] * Math.sin(th) }; };
+      let L4 = [0, 1, 2, 3].map(i => lineOf(best[i], best[(i + 1) % 4]));
+      const quadOf = L => { const q = [inter(L[3], L[0]), inter(L[0], L[1]), inter(L[1], L[2]), inter(L[2], L[3])]; return q.some(p => !p) ? null : q; };
+      const span = Math.max(w, h) * .07;
+      for (let it = 0; it < 2; it++) for (let i = 0; i < 4; i++) {
+        const base = L4[i], th0 = Math.atan2(base.s, base.c);
+        for (let da = -2; da <= 2; da++) { const th = th0 + da * Math.PI / 180, c = Math.cos(th), sn = Math.sin(th);
+          /* keep the edge's middle point as the pivot when tilting */
+          const a = best[i], b = best[(i + 1) % 4], mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2, r0 = mx * c + my * sn;
+          for (let dr = -span; dr <= span; dr += 1) {
+            const L = L4.slice(); L[i] = { c, s: sn, r: r0 + dr }; const q = quadOf(L); if (!q || q.some(p => p[0] < -mx0 || p[1] < -my0 || p[0] > w + mx0 || p[1] > h + my0)) continue;
+            const sc = score(q); if (sc > bestS + 1e-4) { bestS = sc; best = q; L4 = L; }
+          }
+        }
+      }
     }
     if (!best || bestS < .05) return null;
     const cx = best.reduce((s, p) => s + p[0], 0) / 4, cy = best.reduce((s, p) => s + p[1], 0) / 4;
@@ -1309,7 +1328,7 @@ async function rescan(d, findEdges){
   if (d.status === "edit") d.photoChanged = true;
   try {
     const img = await createImageBitmap(d.orig);
-    if (findEdges) d.quad = Scan.detect(img);
+    if (findEdges) { d.quad = Scan.detect(img); d.detV = DET_V; d.manual = false; }
     d.blob = await Scan.process(img, d.useOrig ? null : d.quad, d.turns || 0);
     if (d.useOrig && !d.turns) d.blob = d.orig;
   } catch { d.blob = d.blob || d.orig; }
@@ -1320,7 +1339,7 @@ async function rescan(d, findEdges){
 function drawTools(){
   const d = cur, t = $("#ptools"); t.hidden = !d || !(d.orig || d.blob || d.photoKey);
   ["#tCrop", "#tRot", "#tOrig"].forEach(s => $(s).hidden = !d || !d.orig);
-  $("#tRead").disabled = !!d && (d.status === "reading" || d.status === "waiting");
+  $("#tRead").disabled = !!d && (d.status === "reading" || d.status === "waiting" || d.status === "prep");
   if (d) $("#tOrig span").textContent = d.useOrig ? "ตัดขอบ + ปรับภาพ" : "ใช้รูปเดิม";
 }
 async function rereadIfNeeded(d){ if (d.status === "edit") return; d.reread = true; d.status = "waiting"; drawQueue(); if (cur === d) drawOcr(); saveDrafts(); pumpOcr(); }
@@ -1343,7 +1362,7 @@ let crop = null;
 $("#tCrop").addEventListener("click", async () => {
   const d = cur; if (!d || !d.orig) return;
   const img = await createImageBitmap(d.orig); const W = img.width, H = img.height;
-  if (!d.quad && d.status === "edit") d.quad = Scan.detect(img);
+  if (!d.quad && !d.manual) { d.quad = Scan.detect(img); d.detV = DET_V; }
   crop = { d, W, H, q: (d.quad || Scan.full(img)).map(p => p.slice()), img, drag: null };
   $("#cropImg").src = URL.createObjectURL(d.orig); $("#cropSheet").classList.add("on");
   $("#cropImg").onload = drawCrop;
@@ -1387,7 +1406,7 @@ $("#cropBox").addEventListener("touchmove", e => { if (crop && crop.drag != null
 $("#cropAuto").addEventListener("click", () => { if (!crop) return; const q = Scan.detect(crop.img); if (q) { crop.q = q; drawCrop(); } else toast("หาขอบไม่เจอ ลากมุมเองได้"); });
 $("#cropAll").addEventListener("click", () => { if (!crop) return; crop.q = Scan.full(crop.img); drawCrop(); });
 $("#cropDone").addEventListener("click", async () => {
-  if (!crop) return; const d = crop.d; d.quad = crop.q; d.useOrig = false; $("#cropSheet").classList.remove("on"); crop = null;
+  if (!crop) return; const d = crop.d; d.quad = crop.q; d.useOrig = false; d.manual = true; $("#cropSheet").classList.remove("on"); crop = null;
   await rescan(d, false); rereadIfNeeded(d);
 });
 window.addEventListener("resize", drawCrop);
@@ -1396,11 +1415,13 @@ async function addFiles(files, fromCamera){
   const devPos = fromCamera ? deviceGps() : null;
   go("scan");
   for (const f of files) {
-    const d = { id: "d" + uid(), status: "waiting", ocr: null, gps: null, locOk: null };
+    const d = { id: "d" + uid(), status: "prep", ocr: null, gps: null, locOk: null };
     drafts.push(d);
     exifGps(f).then(async gg => { d.gps = gg || (devPos ? await devPos : null); d.gSrc = gg ? "จากรูป" : "จากเครื่อง"; if (!d.gps) d.locOk = false; if (cur === d) drawLoc(); saveDrafts(); });
     d.orig = await shrink(f, 2400, .9); await blobPut("draftorig:" + d.id, d.orig);
-    await rescan(d, S.autoScan !== false);
+    await rescan(d, S.autoScan !== false); d.status = "waiting";
+    saveDrafts(); if (!cur) openDraft(d); else drawQueue(); pumpOcr();
+    await new Promise(r => setTimeout(r, 0));   /* let the screen update between photos */
   }
   saveDrafts(); drawQueue();
   if (!cur) openDraft(drafts.find(x => x.status !== "saved"));
@@ -1412,7 +1433,7 @@ function draftName(d){ const o = d.form || d.ocr || {}; return o.name_th || o.na
 function drawQueue(){
   const q = $("#queue");
   if (drafts.length < 2 && !(drafts.length === 1 && cur !== drafts[0])) { q.innerHTML = ""; return; }
-  q.innerHTML = `<div class="muted">รอตรวจ ${drafts.length} ใบ</div>` + drafts.map(d => `<button type="button" class="qitem ${cur === d ? "on" : ""}" data-d="${d.id}"><img src="${d.url || ""}" alt=""><div><b>${esc(draftName(d) || "นามบัตร")}</b><span class="muted">${{ waiting: "รอคิวอ่าน", reading: "กำลังอ่าน…", ready: "พร้อมตรวจ", error: "อ่านไม่ได้ กรอกเอง" }[d.status] || ""}</span></div><span class="muted">›</span></button>`).join("");
+  q.innerHTML = `<div class="muted">รอตรวจ ${drafts.length} ใบ</div>` + drafts.map(d => `<button type="button" class="qitem ${cur === d ? "on" : ""}" data-d="${d.id}"><img src="${d.url || ""}" alt=""><div><b>${esc(draftName(d) || "นามบัตร")}</b><span class="muted">${{ prep: "กำลังเตรียมรูป…", waiting: "รอคิวอ่าน", reading: "กำลังอ่าน…", ready: "พร้อมตรวจ", error: "อ่านไม่ได้ กรอกเอง" }[d.status] || ""}</span></div><span class="muted">›</span></button>`).join("");
 }
 $("#queue").addEventListener("click", e => { const b = e.target.closest("[data-d]"); if (!b) return; stash(); openDraft(drafts.find(d => d.id === b.dataset.d)); });
 /* auto save: whatever is on screen is kept on the phone within half a second, and at once when the app goes to the background */
@@ -1770,7 +1791,7 @@ $("#testKey").addEventListener("click", async () => {
   catch (x) { el.textContent = x.code === "busy" || x.code === "rate" ? "key ใช้ได้ แต่ Gemini ทุกรุ่นมีคนใช้เยอะตอนนี้ — ลองใหม่อีกสักครู่ (กดบันทึกการตั้งค่าได้เลย)" : (OCR_ERR[x.code] || "ใช้ไม่ได้") + (x.message ? " · " + x.message : ""); }
   Object.assign(S, keep);
 });
-function applySettings(){ fillSettings(); drawLinks(); renderCard(); $("#mFrom").value = S.account || S.email; paintCloud(); }
+function applySettings(){ $("#appV").textContent = "เวอร์ชัน " + APP_V; fillSettings(); drawLinks(); renderCard(); $("#mFrom").value = S.account || S.email; paintCloud(); }
 
 /* ================= boot ================= */
 (async () => {
@@ -1782,7 +1803,7 @@ function applySettings(){ fillSettings(); drawLinks(); renderCard(); $("#mFrom")
     const ds = await IDB.get("kv", "drafts");
     if (ds && ds.length) for (const x of ds) { const b = await blobGet("draft:" + x.id); if (!b) continue; const sb = await blobGet("draftself:" + x.id);
       const ob = await blobGet("draftorig:" + x.id);
-      drafts.push({ ...x, blob: b, orig: ob || null, url: URL.createObjectURL(b), selfie: sb || null, selfieUrl: sb ? URL.createObjectURL(sb) : null, status: x.status === "reading" ? "waiting" : x.status }); }
+      drafts.push({ ...x, blob: b, orig: ob || null, url: URL.createObjectURL(b), selfie: sb || null, selfieUrl: sb ? URL.createObjectURL(sb) : null, status: x.status === "reading" || x.status === "prep" ? "waiting" : x.status }); }
   } catch {}
   applySettings(); renderList(); drawPlaces();
   let ed = null; try { ed = await IDB.get("kv", "editdraft"); } catch {}
@@ -1790,6 +1811,8 @@ function applySettings(){ fillSettings(); drawLinks(); renderCard(); $("#mFrom")
     const b = ed.photoChanged ? await blobGet("draft:" + ed.id) : null; if (b) { ed.blob = b; ed.url = URL.createObjectURL(b); }
     go("scan"); openDraft(ed); toast("เปิดงานแก้ไขที่ค้างไว้ให้แล้ว", 4000); pumpOcr();
   } else if (drafts.length) { go("scan"); openDraft(drafts[0]); pumpOcr(); }
+  /* photos waiting in the queue that were straightened by an older version: find their edges again */
+  (async () => { for (const d of drafts.filter(x => x.orig && !x.manual && !x.useOrig && x.detV !== DET_V)) { await rescan(d, true); saveDrafts(); drawQueue(); await new Promise(r => setTimeout(r, 0)); } })();
   if (authErr) toast(authErr, 6000);
   if (token()) sync();
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
