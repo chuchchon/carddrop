@@ -667,7 +667,7 @@ const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 
 const toast = (m, ms = 3200) => { const t = $("#toast"); t.textContent = m; t.classList.add("on"); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove("on"), ms); };
 const FIELDS = ["name_th","name_en","title","company","email","mobile","phone","line","website","address","place","note"];
 const validEmail = e => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e || "");
-const DEF_CARD = "namecard.jpg", DEF_QR = "line-qr.png", APP_V = "27 พ.ย. 69 · 12", DET_V = 4;
+const DEF_CARD = "namecard.jpg", DEF_QR = "line-qr.png", APP_V = "27 พ.ย. 69 · 13", DET_V = 4;
 
 const DEF = {
   nameTh: "ชัชชน (Sea)", nameEn: "Chuchchon Saenjaibal (Sea)", title: "Chief Executive Officer", company: "360TRUCK & 360TECHX",
@@ -2013,7 +2013,8 @@ function onbStep(st){
           <div><i style="background:#30D158">✉</i><span><b>ส่งอีเมลขอบคุณ</b>แนบนามบัตรหรือโบรชัวร์ ตรวจและแก้ก่อนส่งทุกครั้ง</span></div>
           <div><i style="background:#0A84FF">☁</i><span><b>เก็บเข้า Drive และชีตของทีม</b>หลายคนใช้บัญชีเดียวกันได้ รู้ว่าใครเก็บใบไหน</span></div>
         </div>`,
-      next: "เริ่มตั้งค่า", back: false, skip: false,
+      next: "เริ่มตั้งค่า", back: false, skip: false, alt: "ไม่ใช่เครื่องของทีมนี้ — ปิด",
+      onAlt: () => { ["cdInvite", "cdInviteNew"].forEach(k => localStorage.removeItem(k)); closeOnb(false); },
       onNext: () => { onbGo(signedRight() ? "who" : "signin"); return false; } };
     case "signin": {
       const wrong = token() && L.me && inv && inv.e && lc(inv.e) !== lc(L.me);
@@ -2519,8 +2520,14 @@ function applySettings(){ setDirty = false; document.body.classList.toggle("team
   (async () => { for (const d of drafts.filter(x => x.orig && !x.manual && !x.useOrig && x.detV !== DET_V)) { await rescan(d, true); saveDrafts(); drawQueue(); await new Promise(r => setTimeout(r, 0)); } })();
   if (backFromGoogle) { const v = localStorage.getItem("cdView"); localStorage.removeItem("cdView"); if (v && !drafts.length && !ed && $("#" + v)) go(v.replace(/^v-/, "")); }
   if (authErr) toast(authErr, 6000);
-  if (localStorage.getItem("cdInviteNew")) { localStorage.removeItem("cdInviteNew"); openOnb("welcome"); }
-  else if (localStorage.getItem("cdOnb")) openOnb(localStorage.getItem("cdOnb"));
+  const inv0 = pendingInvite(), mineHere = !L.fresh && S.account && (D.cards.length || S.u > 0);
+  if (inv0 && mineHere && lc(inv0.e) !== lc(S.account)) {
+    /* a link meant for a team phone, opened on a phone already used by another account (e.g. the owner tapping the link he shared) */
+    ["cdInvite", "cdInviteNew", "cdOnb"].forEach(k => localStorage.removeItem(k));
+    toast(`ลิงก์นี้สำหรับมือถือที่ใช้บัญชี ${inv0.e} — เครื่องนี้ยังใช้ ${S.account} ตามเดิม`, 6000);
+  } else if (localStorage.getItem("cdInviteNew")) { localStorage.removeItem("cdInviteNew"); openOnb("welcome"); }
+  else if (localStorage.getItem("cdOnb") && (isTeam() || L.fresh)) openOnb(localStorage.getItem("cdOnb"));
+  else localStorage.removeItem("cdOnb");
   if (token()) { localStorage.setItem("cdEver", "1"); sync(); } else if (everSigned() && !backFromGoogle) setTimeout(renewQuietly, 800);
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
 })();
