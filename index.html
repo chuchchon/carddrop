@@ -227,7 +227,7 @@ form{display:block;margin-top:6px}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 
 [hidden]{display:none!important}
-.ptools{display:flex;justify-content:center;gap:22px;margin-top:10px}
+.ptools{display:flex;justify-content:center;flex-wrap:wrap;gap:6px 20px;margin-top:10px}
 .ptools .link-btn{font-size:15px}
 .ptools .link-btn svg{width:19px;height:19px}
 .cropbox{position:relative;margin:0 auto;max-width:100%;touch-action:none;user-select:none;-webkit-user-select:none}
@@ -277,6 +277,7 @@ form{display:block;margin-top:6px}
     <div id="editor" hidden>
       <div class="preview"><img id="previewImg" alt="รูปนามบัตร"></div>
       <div class="ptools" id="ptools">
+        <button type="button" class="link-btn" id="tRead"><svg viewBox="0 0 24 24"><path d="M4 7V5a1 1 0 0 1 1-1h2M17 4h2a1 1 0 0 1 1 1v2M20 17v2a1 1 0 0 1-1 1h-2M7 20H5a1 1 0 0 1-1-1v-2"/><path d="M8 9h8M8 12h8M8 15h5"/></svg>อ่านอีกครั้ง</button>
         <button type="button" class="link-btn" id="tCrop"><svg viewBox="0 0 24 24"><path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/></svg>ปรับขอบ</button>
         <button type="button" class="link-btn" id="tRot"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>หมุน</button>
         <button type="button" class="link-btn" id="tOrig"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 15l5-5 4 4 3-3 6 6"/></svg><span>ใช้รูปเดิม</span></button>
@@ -1092,10 +1093,10 @@ async function ocr(blob){
 let ocrBusy = false;
 async function pumpOcr(){
   if (ocrBusy) return; const d = drafts.find(x => x.status === "waiting"); if (!d) return;
-  ocrBusy = true; d.status = "reading"; drawQueue(); if (cur === d) drawOcr();
+  ocrBusy = true; d.status = "reading"; drawQueue(); if (cur === d) { drawOcr(); drawTools(); }
   try { d.ocr = await ocr(d.blob); d.status = "ready"; } catch (e) { d.status = "error"; d.err = e && e.code; d.errMsg = e && e.message; d.ocr = {}; }
   ocrBusy = false; drawQueue(); saveDrafts();
-  if (cur === d) { fillFromOcr(d); drawOcr(); } else if (!cur) openDraft(d);
+  if (cur === d) { fillFromOcr(d, false, d.reread); d.reread = false; drawOcr(); drawTools(); } else if (!cur) openDraft(d);
   pumpOcr();
 }
 const OCR_ERR = { busy: "Gemini มีคนใช้เยอะชั่วคราว ลองใหม่อีกสักครู่ — กรอกเองได้", model: "ไม่พบ model นี้ — แก้ชื่อ model ในตั้งค่า", nokey: "ยังไม่ได้ใส่ API key สำหรับอ่านนามบัตร (ตั้งค่า) — กรอกเองได้", badkey: "API key ไม่ถูกต้อง — ตรวจในหน้าตั้งค่า", credit: "เครดิต Claude API หมด — เติมที่ platform.claude.com", rate: "เกินโควตาฟรีชั่วคราว รอสักครู่แล้วลองใหม่" };
@@ -1120,10 +1121,24 @@ async function rescan(d, findEdges){
   if (cur === d) { $("#previewImg").src = d.url; drawTools(); }
 }
 function drawTools(){
-  const d = cur, t = $("#ptools"); t.hidden = !d || !d.orig;
+  const d = cur, t = $("#ptools"); t.hidden = !d || !(d.orig || d.blob || d.photoKey);
+  ["#tCrop", "#tRot", "#tOrig"].forEach(s => $(s).hidden = !d || !d.orig);
+  $("#tRead").disabled = !!d && (d.status === "reading" || d.status === "waiting");
   if (d) $("#tOrig span").textContent = d.useOrig ? "ตัดขอบ + ปรับภาพ" : "ใช้รูปเดิม";
 }
-async function rereadIfNeeded(d){ if (d.status === "edit") return; d.status = "waiting"; drawQueue(); if (cur === d) drawOcr(); saveDrafts(); pumpOcr(); }
+async function rereadIfNeeded(d){ if (d.status === "edit") return; d.reread = true; d.status = "waiting"; drawQueue(); if (cur === d) drawOcr(); saveDrafts(); pumpOcr(); }
+/* read the card again; fields you typed yourself are kept, the rest are replaced */
+$("#tRead").addEventListener("click", async () => {
+  const d = cur; if (!d) return;
+  const blob = d.blob || (d.photoKey && await blobGet(d.photoKey)); if (!blob) { toast("ไม่มีรูปนามบัตรให้อ่าน"); return; }
+  if (d.status === "edit") {
+    d.status = "reading"; drawOcr(); drawTools();
+    try { d.ocr = await ocr(blob); d.status = "edit"; fillFromOcr(d, false, true); }
+    catch (e) { d.status = "edit"; toast(OCR_ERR[e && e.code] || "อ่านไม่สำเร็จ" + (e && e.message ? " · " + e.message : ""), 6000); }
+    drawOcr(); drawTools(); return;
+  }
+  d.reread = true; d.status = "waiting"; drawQueue(); drawOcr(); drawTools(); saveDrafts(); pumpOcr();
+});
 $("#tRot").addEventListener("click", async () => { const d = cur; if (!d || !d.orig) return; d.turns = ((d.turns || 0) + 1) % 4; await rescan(d, false); saveDrafts(); });
 $("#tOrig").addEventListener("click", async () => { const d = cur; if (!d || !d.orig) return; d.useOrig = !d.useOrig; await rescan(d, false); saveDrafts(); });
 /* drag the four corners (like the Notes scanner) */
@@ -1185,8 +1200,9 @@ function stash(){ if (cur && cur.status !== "edit") { cur.form = readForm(); cur
 function readForm(){ const f = $("#form"), r = {}; FIELDS.forEach(k => r[k] = f[k].value.trim()); return r; }
 let sessionPlace = { day: "", v: "" };
 function todayPlace(){ const today = new Date().toDateString(); const c = [...D.cards].sort((a, b) => b.createdAt - a.createdAt).find(c => c.place && new Date(c.createdAt).toDateString() === today); return c ? c.place : (sessionPlace.day === today ? sessionPlace.v : ""); }
+$("#form").addEventListener("input", e => { if (e.target.name && FIELDS.includes(e.target.name)) e.target.dataset.user = "1"; });
 function openDraft(d){
-  cur = d || null; $("#formErr").hidden = true;
+  cur = d || null; $("#formErr").hidden = true; FIELDS.forEach(k => delete $("#form")[k].dataset.user);
   if (!d) { $("#editor").hidden = true; drawQueue(); return; }
   $("#editor").hidden = false; const f = $("#form"); f.reset();
   $("#previewImg").removeAttribute("src");
@@ -1198,9 +1214,9 @@ function openDraft(d){
   if (d.status === "edit" && !d.mail) fillMail();
   drawSelfie(); drawLoc(); drawOcr(); drawQueue(); drawPlaces(); drawTools();
 }
-function fillFromOcr(d, quiet){
+function fillFromOcr(d, quiet, force){
   const f = $("#form"), r = d.ocr || {};
-  for (const k of FIELDS) if (k !== "place" && k !== "note" && typeof r[k] === "string" && !f[k].value) f[k].value = r[k].trim();
+  for (const k of FIELDS) if (k !== "place" && k !== "note" && typeof r[k] === "string" && (!f[k].value || (force && !f[k].dataset.user && r[k].trim()))) f[k].value = r[k].trim();
   if (r.lang) $("#mailLang").value = r.lang === "en" ? "en" : "th";
   if (!$("#mailBody").dataset.touched) fillMail();
   if (!quiet) toast(r.email || r.name_th || r.name_en ? "อ่านนามบัตรแล้ว ตรวจแล้วกดบันทึก" : "อ่านได้ไม่ครบ ช่วยกรอกเพิ่ม");
