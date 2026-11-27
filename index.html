@@ -593,7 +593,7 @@ const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 
 const toast = (m, ms = 3200) => { const t = $("#toast"); t.textContent = m; t.classList.add("on"); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove("on"), ms); };
 const FIELDS = ["name_th","name_en","title","company","email","mobile","phone","line","website","address","place","note"];
 const validEmail = e => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e || "");
-const DEF_CARD = "namecard.jpg", DEF_QR = "line-qr.png", APP_V = "27 พ.ย. 69 · 9", DET_V = 4;
+const DEF_CARD = "namecard.jpg", DEF_QR = "line-qr.png", APP_V = "27 พ.ย. 69 · 10", DET_V = 4;
 
 const DEF = {
   nameTh: "ชัชชน (Sea)", nameEn: "Chuchchon Saenjaibal (Sea)", title: "Chief Executive Officer", company: "360TRUCK & 360TECHX",
@@ -718,12 +718,12 @@ const appBase = () => location.origin + location.pathname.replace(/index\.html$/
 const OLD_GCID = "935886786333-g79hk4e4htmqh2dggggfpd8jertf0g5g.apps.googleusercontent.com";
 function gcid(){ if (S.clientId && S.clientId !== OLD_GCID) return S.clientId; return DEF.clientId; }
 function token(){ try { const t = JSON.parse(sessionStorage.getItem("cdTok") || localStorage.getItem("cdTok") || "null"); if (t && t.exp > Date.now() + 90000) return t.tok; } catch {} return ""; }
-async function signIn(){
-  stash(); await saveDrafts(); await persist();
-  const st = "card~" + uid(); try { sessionStorage.setItem("cdState", st); localStorage.setItem("cdState", st); } catch {}
-  location.href = "https://accounts.google.com/o/oauth2/v2/auth?" + new URLSearchParams({ client_id: gcid(), redirect_uri: appBase(), response_type: "token", scope: wantScopes(), state: st, include_granted_scopes: "true", login_hint: (L.fresh ? (pendingInvite() || {}).e : S.account) || "" });
+async function signIn(silent){
+  stash(); await saveDrafts(); await persist(); try { mailFlush(); } catch {}
+  const st = "card~" + (silent === true ? "s" : "") + uid(); try { sessionStorage.setItem("cdState", st); localStorage.setItem("cdState", st); localStorage.setItem("cdView", ($(".view.on") || {}).id || ""); } catch {}
+  location.href = "https://accounts.google.com/o/oauth2/v2/auth?" + new URLSearchParams({ client_id: gcid(), redirect_uri: appBase(), response_type: "token", scope: wantScopes(), state: st, include_granted_scopes: "true", ...(silent === true ? { prompt: "none" } : {}), login_hint: (L.fresh ? (pendingInvite() || {}).e : S.account) || "" });
 }
-let authErr = "";
+let authErr = "", backFromGoogle = false;
 /* invite link from the owner: ?team=<base64 json> — kept until this phone is signed in to the right account */
 (function(){ try { const q = new URLSearchParams(location.search), t = q.get("team"); if (!t) return;
   const j = JSON.parse(decodeURIComponent(escape(atob(t.replace(/-/g, "+").replace(/_/g, "/"))))); if (j && j.f && j.s) localStorage.setItem("cdInvite", JSON.stringify(j));
@@ -732,9 +732,29 @@ function pendingInvite(){ try { return JSON.parse(localStorage.getItem("cdInvite
 (function(){ try { const h = location.hash || ""; if (!/(access_token|error)=/.test(h)) return; const p = new URLSearchParams(h.slice(1)); history.replaceState(null, "", location.pathname);
   const want = sessionStorage.getItem("cdState") || localStorage.getItem("cdState"); if (want !== p.get("state")) return;
   sessionStorage.removeItem("cdState"); localStorage.removeItem("cdState");
-  if (p.get("access_token")) { const v = JSON.stringify({ tok: p.get("access_token"), exp: Date.now() + (+p.get("expires_in") || 3600) * 1000, sc: p.get("scope") || "" }); sessionStorage.setItem("cdTok", v); localStorage.setItem("cdTok", v); }
+  backFromGoogle = true;
+  if (p.get("access_token")) { const v = JSON.stringify({ tok: p.get("access_token"), exp: Date.now() + (+p.get("expires_in") || 3600) * 1000, sc: p.get("scope") || "" }); sessionStorage.setItem("cdTok", v); localStorage.setItem("cdTok", v); localStorage.removeItem("cdSilentFail"); }
+  else if (/^card~s/.test(want)) localStorage.setItem("cdSilentFail", String(Date.now()));   /* silent renewal needs a tap this time: say nothing, the ☁ button asks */
   else authErr = "เข้าสู่ระบบ Google ไม่สำเร็จ (" + (p.get("error") || "") + ")";
 } catch {} })();
+/* ---- keep the sign-in alive without tapping: Google tokens last 1 hour; when one runs out the app quietly asks Google
+   for a new one (prompt=none). Only when nothing is being typed or reviewed, and at most once every 10 minutes. ---- */
+const everSigned = () => !!(L.me || localStorage.getItem("cdEver"));
+function renewSafe(){
+  if (document.visibilityState !== "visible" || navigator.onLine === false || L.fresh || !everSigned()) return false;
+  if ($$(".sheet.on").length || !$("#viewer").hidden) return false;
+  const a = document.activeElement; if (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return false;
+  if (drafts.some(d => d.status === "reading" || d.status === "prep")) return false;
+  if (crop) return false;
+  const last = Math.max(+localStorage.getItem("cdSilentAt") || 0, +localStorage.getItem("cdSilentFail") || 0);
+  return Date.now() - last > 10 * 60 * 1000;
+}
+function renewQuietly(){ if (!renewSafe()) return false; localStorage.setItem("cdSilentAt", String(Date.now())); signIn(true); return true; }
+/* seconds left on the token (0 when none) */
+function tokLeft(){ try { const t = JSON.parse(sessionStorage.getItem("cdTok") || localStorage.getItem("cdTok") || "null"); return t ? Math.max(0, (t.exp - Date.now()) / 1000) : 0; } catch { return 0; } }
+/* renew a little early when something is waiting to go, so it does not stall */
+setInterval(() => { if (everSigned() && tokLeft() < 180 && (pending() > 0 || tokLeft() === 0)) renewQuietly(); }, 60 * 1000);
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && !token() && everSigned()) setTimeout(renewQuietly, 600); });
 const dropToken = () => { try { sessionStorage.removeItem("cdTok"); localStorage.removeItem("cdTok"); } catch {} };
 async function g(url, opt){
   opt = opt || {}; const tok = token(); if (!tok) throw Object.assign(new Error("ต้องเข้าสู่ระบบ Google ก่อน"), { code: "auth" });
@@ -978,7 +998,7 @@ function drawTeamLink(){
 async function whoami(){
   if (L.me && L.meTok === token()) return L.me;
   if (!/(^|\s)(email|https:\/\/www\.googleapis\.com\/auth\/userinfo\.email)(\s|$)/.test(tokScopes())) return L.me || "";   /* signed in before this version: ask next time */
-  try { const j = await g("https://openidconnect.googleapis.com/v1/userinfo"); L.me = lc(j && j.email); L.meTok = token(); persistLocal(); } catch (e) { if (e.code === "auth") throw e; }
+  try { const j = await g("https://openidconnect.googleapis.com/v1/userinfo"); L.me = lc(j && j.email); L.meTok = token(); persistLocal(); localStorage.setItem("cdEver", "1"); } catch (e) { if (e.code === "auth") throw e; }
   return L.me;
 }
 /* decide what this phone is for: the owner's own CardDrop, or a team account; never mix two accounts' data */
@@ -1003,7 +1023,7 @@ async function settleAccount(){
 }
 async function sync(){
   if (SY.busy) { SY.again = true; return; }
-  if (!token()) { paintCloud(); return; }
+  if (!token()) { paintCloud(); if (everSigned()) setTimeout(renewQuietly, 300); return; }
   if (navigator.onLine === false) { SY.err = "ไม่มีอินเทอร์เน็ต จะส่งต่อเมื่อออนไลน์"; paintCloud(); return; }
   SY.busy = true; SY.err = ""; paintCloud();
   let touched = false;
@@ -2217,8 +2237,9 @@ function applySettings(){ document.body.classList.toggle("team", isTeam()); docu
   } else if (drafts.length) { go("scan"); openDraft(drafts[0]); pumpOcr(); }
   /* photos waiting in the queue that were straightened by an older version: find their edges again */
   (async () => { for (const d of drafts.filter(x => x.orig && !x.manual && !x.useOrig && x.detV !== DET_V)) { await rescan(d, true); saveDrafts(); drawQueue(); await new Promise(r => setTimeout(r, 0)); } })();
+  if (backFromGoogle) { const v = localStorage.getItem("cdView"); localStorage.removeItem("cdView"); if (v && !drafts.length && !ed && $("#" + v)) go(v.replace(/^v-/, "")); }
   if (authErr) toast(authErr, 6000);
-  if (token()) sync();
+  if (token()) { localStorage.setItem("cdEver", "1"); sync(); } else if (everSigned() && !backFromGoogle) setTimeout(renewQuietly, 800);
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
 })();
 }
