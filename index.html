@@ -234,7 +234,37 @@ body.team .owner-only,body:not(.team) .team-only{display:none!important}
 .setmenu .cell{display:flex;align-items:center;gap:12px;width:100%;text-align:left}
 .setmenu .cell>span:not(.chev):not(.avatar):not(.pt){flex:1}
 .setmenu .val{color:var(--mute);font-size:15px;white-space:nowrap;max-width:42%;overflow:hidden;text-overflow:ellipsis}
-.sec.dup{display:none}.setmenu .danger span{color:var(--bad)!important}
+.sec.dup{display:none}
+.onb{position:fixed;inset:0;z-index:35;background:#000;display:flex;flex-direction:column;padding:calc(10px + env(safe-area-inset-top)) 0 calc(14px + env(safe-area-inset-bottom))}
+.onb[hidden]{display:none}
+.onb-top{display:flex;align-items:center;justify-content:space-between;padding:0 18px;min-height:40px}
+.onb-top .dots{display:flex;gap:6px}.onb-top .dots i{width:7px;height:7px;border-radius:50%;background:#3a3a3c}.onb-top .dots i.on{background:var(--lime);width:18px;border-radius:4px}
+.onb-top button[hidden]{visibility:hidden;display:inline-block}
+.onb-body{flex:1;overflow:auto;padding:8px 22px 20px;-webkit-overflow-scrolling:touch}
+.onb-body.in{animation:pushin .32s cubic-bezier(.2,.8,.2,1)}
+.onb-foot{padding:10px 22px 0;display:grid;gap:4px}
+.onb h2{font-size:32px;line-height:1.15;font-weight:700;text-align:center;margin:18px 0 10px;letter-spacing:-.4px}
+.onb .lead{text-align:center;color:var(--mute);font-size:16px;line-height:1.5;margin:0 auto 22px;max-width:30em}
+.onb .hero{width:92px;height:92px;border-radius:22px;display:block;margin:22px auto 4px;box-shadow:0 10px 30px rgba(215,226,23,.25)}
+.onb .big-ic{width:76px;height:76px;border-radius:20px;display:grid;place-items:center;margin:18px auto 0;font-size:38px}
+.feat{display:grid;gap:18px;margin:8px 4px 0}.feat div{display:flex;gap:14px;align-items:flex-start}
+.feat i{flex:none;width:40px;height:40px;border-radius:11px;display:grid;place-items:center;font-style:normal;font-size:19px}
+.feat b{display:block;font-size:16px}.feat span{color:var(--mute);font-size:14px;line-height:1.45}
+.onb .group{margin-top:6px}
+.onb .preview{background:#fff;color:#222;border-radius:14px;padding:14px 16px;font-size:13.5px;line-height:1.55;white-space:pre-wrap;margin-top:8px;max-height:260px;overflow:auto}
+.onb .preview b{display:block;font-size:14px;margin-bottom:6px}
+.choice{display:flex;gap:12px;align-items:center;width:100%;text-align:left;background:var(--panel2);border:2px solid transparent;border-radius:16px;padding:14px;margin-top:10px;color:inherit;font:inherit}
+.choice.on{border-color:var(--lime)}.choice .r{width:22px;height:22px;border-radius:50%;border:2px solid #636366;flex:none;display:grid;place-items:center}
+.choice.on .r{border-color:var(--lime)}.choice.on .r:after{content:"";width:12px;height:12px;border-radius:50%;background:var(--lime)}
+.choice .t{flex:1;min-width:0}.choice .t b{display:block;font-size:16px}.choice .t small{color:var(--mute);font-size:13px;line-height:1.4;display:block}
+.choice img{width:54px;height:54px;object-fit:cover;border-radius:9px;background:#000;flex:none}
+.subform{margin:8px 0 0 34px;display:grid;gap:8px}.subform[hidden]{display:none}
+.tut{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:14px;margin:6px -22px 0;padding:0 22px 6px;scrollbar-width:none}.tut::-webkit-scrollbar{display:none}
+.tut .card{flex:0 0 82%;scroll-snap-align:center;background:var(--panel2);border-radius:22px;padding:18px 18px 20px}
+.tut svg{display:block;width:100%;height:auto;max-height:300px;margin:0 auto 14px}
+.tut .n{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--lime);color:var(--lime-ink);font-weight:700;font-size:14px;margin-right:8px}
+.tut b{font-size:18px}.tut p{color:var(--mute);font-size:14.5px;line-height:1.5;margin:8px 0 0}
+.tutdots{display:flex;gap:6px;justify-content:center;margin-top:12px}.tutdots i{width:7px;height:7px;border-radius:50%;background:#3a3a3c}.tutdots i.on{background:var(--lime)}.setmenu .danger span{color:var(--bad)!important}
 .setmenu .profile{padding-top:12px;padding-bottom:12px}
 .setmenu .avatar{width:58px;height:58px;border-radius:50%;background:linear-gradient(145deg,var(--lime),#9aa30f);color:var(--lime-ink);display:grid;place-items:center;font-size:26px;font-weight:700;flex:none}
 .setmenu .pt{flex:1;display:grid;gap:2px;min-width:0}.setmenu .pt b{font-size:20px;font-weight:600}.setmenu .pt small{color:var(--mute);font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -411,6 +441,10 @@ body.fresh #v-me .sec,body.fresh #links,body.fresh #v-me .foot,body.fresh #share
           <button type="button" class="cell" data-open="google"><i class="ic" style="background:#5E5CE6;color:#fff">G</i><span>Google</span><small class="val" id="smGoogle"></small></button>
           <button type="button" class="cell owner-only" data-open="team"><i class="ic" style="background:#64D2FF;color:#002b3a">⚑</i><span>ทีม</span><small class="val" id="smTeam"></small></button>
         </div>
+        <div class="group">
+          <button type="button" class="cell" id="openTut"><i class="ic" style="background:#FF375F">?</i><span>วิธีเพิ่มนามบัตร</span></button>
+          <button type="button" class="cell team-only" id="openOnbAll"><i class="ic" style="background:#8E8E93">↻</i><span>ตั้งค่าเริ่มต้นอีกครั้ง</span></button>
+        </div>
         <div class="group"><button class="cell plainc danger" type="button" id="setDefaults"><span>คืนค่าเริ่มต้นทั้งหมด</span></button></div>
         <p class="foot" style="text-align:center;margin-top:18px">CardDrop <span id="appV"></span></p>
       </div>
@@ -575,6 +609,11 @@ body.fresh #v-me .sec,body.fresh #links,body.fresh #v-me .foot,body.fresh #share
     <p class="foot" style="text-align:center">ลากมุมทั้งสี่ให้ตรงขอบนามบัตร</p>
   </div>
 </div>
+<div class="onb" id="onb" role="dialog" aria-modal="true" aria-label="เริ่มต้นใช้ CardDrop" hidden>
+  <div class="onb-top"><button type="button" class="backbtn" id="onbBack">‹ ย้อนกลับ</button><div class="dots" id="onbDots"></div><button type="button" class="link-btn" id="onbSkip">ข้าม</button></div>
+  <div class="onb-body" id="onbBody"></div>
+  <div class="onb-foot"><p class="err" id="onbErr" hidden></p><button type="button" class="btn lime big" id="onbNext">ต่อไป</button><button type="button" class="btn plain" id="onbAlt" hidden></button></div>
+</div>
 <div class="sheet" id="whoSheet" role="dialog" aria-modal="true" aria-label="ใครใช้เครื่องนี้">
   <div class="body">
     <div class="head"><h3>ใครใช้เครื่องนี้</h3></div>
@@ -628,7 +667,7 @@ const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 
 const toast = (m, ms = 3200) => { const t = $("#toast"); t.textContent = m; t.classList.add("on"); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove("on"), ms); };
 const FIELDS = ["name_th","name_en","title","company","email","mobile","phone","line","website","address","place","note"];
 const validEmail = e => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e || "");
-const DEF_CARD = "namecard.jpg", DEF_QR = "line-qr.png", APP_V = "27 พ.ย. 69 · 11", DET_V = 4;
+const DEF_CARD = "namecard.jpg", DEF_QR = "line-qr.png", APP_V = "27 พ.ย. 69 · 12", DET_V = 4;
 
 const DEF = {
   nameTh: "ชัชชน (Sea)", nameEn: "Chuchchon Saenjaibal (Sea)", title: "Chief Executive Officer", company: "360TRUCK & 360TECHX",
@@ -763,7 +802,7 @@ async function signIn(silent){
 let authErr = "", backFromGoogle = false;
 /* invite link from the owner: ?team=<base64 json> — kept until this phone is signed in to the right account */
 (function(){ try { const q = new URLSearchParams(location.search), t = q.get("team"); if (!t) return;
-  const j = JSON.parse(decodeURIComponent(escape(atob(t.replace(/-/g, "+").replace(/_/g, "/"))))); if (j && j.f && j.s) localStorage.setItem("cdInvite", JSON.stringify(j));
+  const j = JSON.parse(decodeURIComponent(escape(atob(t.replace(/-/g, "+").replace(/_/g, "/"))))); if (j && j.f && j.s) { localStorage.setItem("cdInvite", JSON.stringify(j)); localStorage.setItem("cdInviteNew", "1"); }
   history.replaceState(null, "", location.pathname); } catch {} })();
 function pendingInvite(){ try { return JSON.parse(localStorage.getItem("cdInvite") || "null"); } catch { return null; } }
 (function(){ try { const h = location.hash || ""; if (!/(access_token|error)=/.test(h)) return; const p = new URLSearchParams(h.slice(1)); history.replaceState(null, "", location.pathname);
@@ -851,7 +890,7 @@ function kitList(){
   const k = (S.kits || []).filter(x => x.img).map(x => ({ ...x, kind: "brochure" }));
   return (hasCard() ? [{ id: "card", name: isTeam() ? "นามบัตร" : "นามบัตรของผม", kind: "card", link: "" }] : []).concat(k);
 }
-function kitOf(id){ const l = kitList(); return l.find(k => k.id === id) || l.find(k => k.id === S.kitDefault) || l[0] || null; }
+function kitOf(id){ const l = kitList(); if (id === "none") return null; return l.find(k => k.id === id) || l.find(k => k.id === S.kitDefault) || l[0] || null; }
 /* JPEG of a handout as a data URL (cards are drawn; brochures come from the uploaded picture) */
 async function kitJpeg(kit){
   if (!kit) return "";
@@ -1055,7 +1094,6 @@ async function settleAccount(){
     if (inv.e && lc(inv.e) !== me) SY.err = `ลิงก์ทีมนี้สำหรับ ${inv.e} แต่เข้าสู่ระบบเป็น ${me}`;
     else { S.teamLink = { o: inv.o, f: inv.f, s: inv.s, t: inv.t || "ทีม" }; S.u = Date.now(); localStorage.removeItem("cdInvite"); await persist(); applySettings(); toast("เชื่อมกับโฟลเดอร์ทีมแล้ว", 4000); }
   }
-  if (isTeam() && !L.user.name) openWho();
   return true;
 }
 async function sync(){
@@ -1153,7 +1191,9 @@ async function sync(){
     }
     L.last = Date.now(); persistLocal();
   } catch (e) { SY.err = e && e.code === "auth" ? "" : (e && e.message) || String(e); }
-  finally { SY.busy = false; SY.msg = ""; paintCloud(); renderList(); if (SY.again) { SY.again = false; syncSoon(800); } }
+  finally { SY.busy = false; SY.msg = ""; paintCloud(); renderList();
+    if (onb && onb.wait) onbRender();   /* account settings have arrived from Drive */
+    else if (isTeam() && !onb && token() && !SY.wrong && !localStorage.getItem("cdOnbDone:" + lc(S.account))) openOnb(L.user.name ? "email" : "who"); if (SY.again) { SY.again = false; syncSoon(800); } }
 }
 const clean = s => String(s || "").replace(/[\\/:*?"<>|]+/g, " ").trim().slice(0, 50);
 /* Drive file name: YYYYMMDD_ชื่อ_บริษัท_ที่ที่เจอ (empty parts are left out) */
@@ -1903,7 +1943,7 @@ $("#form").addEventListener("submit", async e => {
     else if (d.selfieRemoved) c.selfie = null;
     if (wantMail) {
       const m = base.mail && base.mail.status !== "skipped" ? base.mail : null;
-      if (!m) { const lang = (d.ocr && d.ocr.lang === "en") ? "en" : langOf(c); const kit = (kitOf(S.kitDefault) || {}).id; c.mail = { status: "draft", to: rec.email, lang, kit, ...composeMail(c, lang, kit) }; }
+      if (!m) { const lang = (d.ocr && d.ocr.lang === "en") ? "en" : langOf(c); const kit = S.kitDefault === "none" ? "none" : (kitOf(S.kitDefault) || {}).id; c.mail = { status: "draft", to: rec.email, lang, kit, ...composeMail(c, lang, kit) }; }
       else if (m.status !== "sent" && m.status !== "queued" && !m.touched) { c.mail = { ...m, to: rec.email, ...composeMail(c, m.lang || langOf(c), m.kit) }; }   /* name or place changed: rewrite an untouched draft */
       else c.mail = { ...m, to: m.to && m.status === "sent" ? m.to : rec.email };
     } else if (!base.mail) c.mail = { status: "skipped" };
@@ -1924,6 +1964,174 @@ $("#form").addEventListener("submit", async e => {
   finally { btn.disabled = false; btn.textContent = "บันทึก"; }
 });
 $("#skipBtn").addEventListener("click", () => { if (!cur) return; const d = cur; if (d.status === "edit") IDB.del("kv", "editdraft").catch(() => {}); drafts = drafts.filter(x => x !== d); saveDrafts(); IDB.del("blobs", "draft:" + d.id).catch(() => {}); openDraft(drafts.find(x => x.status === "ready") || drafts[0]); });
+
+/* ================= onboarding for team accounts: shown every time an invite link is opened ================= */
+let onb = null, inviteOpened = false;
+const ONB = ["welcome", "signin", "who", "email", "attach", "tutorial"];
+const onbOn = () => !!onb;
+const onbInv = () => pendingInvite() || (S.teamLink ? { o: S.teamLink.o, e: S.account } : null);
+const ownerName = o => lc(o) === OWNER ? "ชัชชน (Sea)" : (o || "เจ้าของ");
+const signedRight = () => { const inv = onbInv(); return !!token() && isTeam() && !SY.wrong && (!inv || !inv.e || lc(inv.e) === lc(L.me || S.account)); };
+function openOnb(step, only){
+  onb = { step, only: !!only, data: {} }; if (!only) localStorage.setItem("cdOnb", step);
+  $("#onb").hidden = false; document.body.style.overflow = "hidden"; onbRender();
+}
+function closeOnb(done){
+  if (done) localStorage.setItem("cdOnbDone:" + lc(S.account), "1");
+  localStorage.removeItem("cdOnb"); onb = null; $("#onb").hidden = true; document.body.style.overflow = ""; applySettings();
+}
+function onbGo(step){ if (!onb) return; onb.step = step; if (!onb.only) localStorage.setItem("cdOnb", step); onbRender(); }
+const onbErr = t => { const e = $("#onbErr"); e.textContent = t || ""; e.hidden = !t; };
+const SAMPLE = { name_th: "สมชาย ใจดี", name_en: "Somchai Jaidee", company: "PTG Energy", place: "งาน TILOG 2026" };
+/* drawings for the guide: a phone with the screen of each step */
+function mock(kind){
+  const tab = i => `<g>${[0, 1, 2, 3].map(j => `<rect x="${28 + j * 62}" y="452" width="52" height="34" rx="10" fill="${j === i ? "#d7e217" : "#2c2c2e"}"/>`).join("")}</g>`;
+  const scr = {
+    scan: `<rect x="40" y="70" width="220" height="40" rx="10" fill="#2c2c2e"/><rect x="40" y="124" width="104" height="120" rx="14" fill="#d7e217"/><text x="92" y="196" font-size="34" text-anchor="middle" fill="#141500">📷</text><rect x="156" y="124" width="104" height="120" rx="14" fill="#2c2c2e"/><text x="208" y="196" font-size="30" text-anchor="middle">🖼️</text><text x="92" y="268" font-size="13" text-anchor="middle" fill="#fff">ถ่ายรูป</text><text x="208" y="268" font-size="13" text-anchor="middle" fill="#fff">เลือกหลายรูป</text>${tab(1)}`,
+    crop: `<rect x="34" y="90" width="232" height="300" rx="10" fill="#3a3a3c"/><path d="M70 170 L236 160 L244 300 L64 312 Z" fill="#f2f2f2" stroke="#d7e217" stroke-width="3"/><rect x="84" y="190" width="90" height="10" rx="5" fill="#1c3f94"/><rect x="84" y="210" width="120" height="7" rx="3" fill="#999"/><rect x="84" y="226" width="70" height="7" rx="3" fill="#999"/>${[[70, 170], [236, 160], [244, 300], [64, 312]].map(p => `<circle cx="${p[0]}" cy="${p[1]}" r="11" fill="rgba(215,226,23,.3)" stroke="#d7e217" stroke-width="3"/>`).join("")}<text x="150" y="420" font-size="13" text-anchor="middle" fill="#8e8e93">ลากมุมให้ตรงขอบ</text>`,
+    form: `<rect x="40" y="62" width="220" height="70" rx="10" fill="#f2f2f2"/><rect x="40" y="146" width="220" height="190" rx="14" fill="#2c2c2e"/>${[0, 1, 2, 3].map(i => `<rect x="54" y="${162 + i * 30}" width="${150 - i * 18}" height="9" rx="4" fill="#636366"/>`).join("")}<rect x="40" y="348" width="220" height="44" rx="12" fill="#2c2c2e" stroke="#d7e217" stroke-width="2.5"/><text x="56" y="375" font-size="13" fill="#d7e217">เจอกันที่ไหน: งาน TILOG</text><rect x="40" y="402" width="220" height="38" rx="19" fill="#d7e217"/><text x="150" y="426" font-size="14" font-weight="700" text-anchor="middle" fill="#141500">บันทึก</text>`,
+    mail: `<rect x="30" y="80" width="240" height="360" rx="18" fill="#1c1c1e"/><text x="50" y="112" font-size="13" fill="#d7e217">ไว้ทีหลัง</text><circle cx="246" cy="108" r="13" fill="#d7e217"/><text x="246" y="113" font-size="14" font-weight="700" text-anchor="middle" fill="#141500">↑</text>${[0, 1, 2].map(i => `<rect x="46" y="${134 + i * 30}" width="208" height="20" rx="6" fill="#2c2c2e"/>`).join("")}${[0, 1, 2, 3, 4].map(i => `<rect x="46" y="${236 + i * 18}" width="${190 - (i % 2) * 40}" height="8" rx="4" fill="#48484a"/>`).join("")}<rect x="46" y="338" width="64" height="40" rx="6" fill="#f2f2f2"/><rect x="118" y="338" width="64" height="40" rx="6" fill="#0A84FF"/><text x="150" y="364" font-size="11" text-anchor="middle" fill="#fff">VCF</text>`,
+    list: `<rect x="40" y="66" width="220" height="30" rx="10" fill="#2c2c2e"/>${[0, 1, 2, 3].map(i => `<g><rect x="40" y="${110 + i * 64}" width="220" height="54" rx="12" fill="#1c1c1e"/><rect x="50" y="${118 + i * 64}" width="56" height="38" rx="6" fill="#f2f2f2"/><rect x="116" y="${122 + i * 64}" width="100" height="9" rx="4" fill="#fff"/><rect x="116" y="${138 + i * 64}" width="70" height="7" rx="3" fill="#636366"/><rect x="198" y="${136 + i * 64}" width="52" height="12" rx="6" fill="${i ? "rgba(48,209,88,.3)" : "rgba(255,159,10,.3)"}"/></g>`).join("")}${tab(2)}`
+  }[kind];
+  return `<svg viewBox="0 0 300 520" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system,Sarabun,sans-serif"><rect x="10" y="6" width="280" height="508" rx="40" fill="#0b0b0c" stroke="#3a3a3c" stroke-width="3"/><rect x="118" y="20" width="64" height="16" rx="8" fill="#1c1c1e"/>${scr}</svg>`;
+}
+const TUT = [
+  ["scan", "แตะ “สแกน”", "ถ่ายรูปนามบัตรทีละใบ หรือเลือกหลายรูปจากแกลเลอรีพร้อมกันก็ได้ แอปอ่านชื่อ บริษัท เบอร์ และอีเมลให้เอง"],
+  ["crop", "ตรวจขอบนามบัตร", "แอปตัดขอบและปรับภาพให้เอง ถ้าไม่ตรง แตะ “ปรับขอบ” แล้วลากมุมทั้งสี่ (มีแว่นขยายช่วย) แตะรูปเพื่อขยายดูได้"],
+  ["form", "ตรวจข้อมูล แล้วกดบันทึก", "แก้ช่องที่อ่านผิด ใส่ “เจอกันที่ไหน” ครั้งเดียว ใบถัดไปในวันเดียวกันใส่ให้เอง ทุกอย่างบันทึกอัตโนมัติระหว่างพิมพ์"],
+  ["mail", "ตรวจอีเมล แล้วส่ง", "อีเมลขอบคุณเด้งขึ้นมาให้ตรวจ แก้ได้ เลือกแนบนามบัตรหรือโบรชัวร์ แล้วแตะ ↑ เพื่อส่ง หรือ “ไว้ทีหลัง” ถ้ายังไม่พร้อม"],
+  ["list", "ดูรายชื่อทั้งหมด", "แท็บ “รายชื่อ” มีทุกคนที่เก็บไว้ กรอง “ยังไม่ส่งอีเมล” เพื่อตามส่ง ทุกใบเข้า Google Drive และชีตของทีมให้เอง"]
+];
+function onbStep(st){
+  const inv = onbInv(), acct = (inv && inv.e) || S.account || "บัญชีบริษัท";
+  switch (st) {
+    case "welcome": return {
+      html: `<img class="hero" src="icon-192.png" alt=""><h2>ยินดีต้อนรับสู่<br>CardDrop</h2>
+        <p class="lead">${inv && inv.o ? esc(ownerName(inv.o)) + " ชวนคุณใช้ CardDrop" : "CardDrop"} กับบัญชี <b>${esc(acct)}</b> ใช้เวลาตั้งค่าประมาณ 2 นาที</p>
+        <div class="feat">
+          <div><i style="background:var(--lime);color:var(--lime-ink)">▭</i><span><b>สแกนนามบัตร</b>ถ่ายรูปแล้วแอปตัดขอบ อ่านชื่อ บริษัท เบอร์ และอีเมลให้</span></div>
+          <div><i style="background:#30D158">✉</i><span><b>ส่งอีเมลขอบคุณ</b>แนบนามบัตรหรือโบรชัวร์ ตรวจและแก้ก่อนส่งทุกครั้ง</span></div>
+          <div><i style="background:#0A84FF">☁</i><span><b>เก็บเข้า Drive และชีตของทีม</b>หลายคนใช้บัญชีเดียวกันได้ รู้ว่าใครเก็บใบไหน</span></div>
+        </div>`,
+      next: "เริ่มตั้งค่า", back: false, skip: false,
+      onNext: () => { onbGo(signedRight() ? "who" : "signin"); return false; } };
+    case "signin": {
+      const wrong = token() && L.me && inv && inv.e && lc(inv.e) !== lc(L.me);
+      return {
+        html: `<div class="big-ic" style="background:#fff">🔐</div><h2>เข้าสู่ระบบ Google</h2>
+          <p class="lead">ใช้บัญชี <b>${esc(acct)}</b><br>ใช้รหัสผ่านเดียวกับที่ทีมใช้ร่วมกัน แอปจะใช้บัญชีนี้ส่งอีเมล เก็บรูปลง Drive และลงชีต</p>
+          ${wrong ? `<p class="err">ตอนนี้เข้าสู่ระบบเป็น ${esc(L.me)} — แตะปุ่มด้านล่างแล้วเลือก ${esc(acct)}</p>` : ""}
+          <p class="foot" style="text-align:center">ระหว่างทางจะเห็นหน้าขอสิทธิ์ของ Google ให้กด “อนุญาต” แอปจะกลับมาที่ขั้นถัดไปเอง</p>`,
+        next: "เข้าสู่ระบบด้วย Google",
+        onNext: () => { localStorage.setItem("cdOnb", "who"); signIn(); return false; } };
+    }
+    case "who": return {
+      html: `<div class="big-ic" style="background:#0A84FF">👤</div><h2>ใครใช้เครื่องนี้</h2>
+        <p class="lead">หลายคนใช้บัญชี ${esc(isTeam() ? S.account : acct)} ร่วมกันได้ ชื่อนี้ติดไปกับนามบัตรทุกใบที่สแกนจากเครื่องนี้ และใช้ลงชื่อท้ายอีเมล</p>
+        <div class="group rows"><label><span>ชื่อ</span><input id="oName" placeholder="เช่น แพร ฝ่ายการตลาด" autocomplete="name" value="${esc(L.user.name)}"></label>
+        <label><span>เบอร์โทร</span><input id="oPhone" inputmode="tel" placeholder="ใส่ในลายเซ็นอีเมล" value="${esc(L.user.phone)}"></label>
+        <label><span>LINE ID</span><input id="oLine" placeholder="ไม่ใส่ก็ได้" value="${esc(L.user.line)}"></label></div>`,
+      next: "ต่อไป",
+      onNext: () => { const n = $("#oName").value.trim(); if (!n) { onbErr("ใส่ชื่อก่อน"); $("#oName").focus(); return false; }
+        L.user = { name: n, phone: $("#oPhone").value.trim(), line: $("#oLine").value.trim() }; persistLocal(); return true; } };
+    case "email": {
+      if (!isTeam()) return { html: `<h2>กำลังโหลดข้อมูลบัญชี…</h2><p class="lead">รอสักครู่ ถ้านานเกินไป ตรวจอินเทอร์เน็ตแล้วแตะ ☁ มุมบน</p>`, wait: true, next: "ต่อไป", onNext: () => false };
+      /* team text must never carry the owner's name or signature */
+      const T = TEAM_DEF(S.account); if (/ชัชชน|chuchchon|Sea\b/i.test([S.subjTh, S.bodyTh, S.sigTh, S.subjEn, S.bodyEn, S.sigEn].join(" "))) ["subjTh", "bodyTh", "sigTh", "subjEn", "bodyEn", "sigEn", "chatTh", "chatEn"].forEach(k => S[k] = T[k]);
+      const L1 = onb.data.lang || "th", K = L1 === "en" ? ["subjEn", "bodyEn", "sigEn"] : ["subjTh", "bodyTh", "sigTh"];
+      return {
+        html: `<h2>ข้อความอีเมล</h2><p class="lead">ร่างไว้ให้แล้ว แก้ได้ตามสไตล์ทีม ระบบจะใส่ชื่อลูกค้า บริษัท ที่ที่เจอ และชื่อคุณให้เอง</p>
+          <div class="seg" id="oLang"><button type="button" data-l="th" class="${L1 === "th" ? "on" : ""}">ไทย</button><button type="button" data-l="en" class="${L1 === "en" ? "on" : ""}">English</button></div>
+          <div class="group rows" style="margin-top:12px"><label class="stack"><span>หัวข้อ</span><input id="oSubj" value="${esc(S[K[0]])}"></label>
+          <label class="stack"><span>ข้อความ</span><textarea id="oBody" rows="9">${esc(S[K[1]])}</textarea></label>
+          <label class="stack"><span>ลายเซ็น</span><textarea id="oSig" rows="5">${esc(S[K[2]])}</textarea></label>
+          <label class="check"><span>เปิดส่งอีเมลไว้ทุกครั้งที่บันทึกนามบัตร</span><input type="checkbox" id="oMailOn"${S.mailDefault ? " checked" : ""}></label></div>
+          <p class="foot">{name} ชื่อลูกค้า · {company} บริษัท · {place} ที่ที่เจอ · {kit} สิ่งที่แนบ · {signature} ลายเซ็น · {sender} {senderPhone} {senderLine} คุณ · {account} อีเมลบัญชี</p>
+          <div class="sec">ตัวอย่างที่ลูกค้าจะเห็น</div><div class="preview" id="oPrev"></div>`,
+      next: "ใช้ข้อความนี้",
+      mount: () => {
+        const sync1 = () => { S[K[0]] = $("#oSubj").value; S[K[1]] = $("#oBody").value; S[K[2]] = $("#oSig").value; S.mailDefault = $("#oMailOn").checked;
+          const t = composeMail(SAMPLE, L1, S.kitDefault); $("#oPrev").innerHTML = `<b>${esc(t.subject)}</b>${esc(t.body)}`; };
+        ["#oSubj", "#oBody", "#oSig", "#oMailOn"].forEach(x => $(x).addEventListener("input", sync1)); $("#oMailOn").addEventListener("change", sync1); sync1();
+        $("#oLang").addEventListener("click", e => { const b = e.target.closest("[data-l]"); if (!b) return; sync1(); onb.data.lang = b.dataset.l; onbRender(); });
+      },
+      onNext: async () => { S.u = Date.now(); await persist(); syncSoon(); return true; } };
+    }
+    case "attach": {
+      if (!isTeam()) return { html: `<h2>กำลังโหลดข้อมูลบัญชี…</h2>`, wait: true, next: "ต่อไป", onNext: () => false };
+      const d = onb.data; if (!d.kits) { d.kits = clone(S.kits || []); d.card = S.cardImg ? "keep" : null; d.def = S.kitDefault || (S.cardImg ? "card" : (d.kits[0] || {}).id || "none"); }
+      const kit0 = d.kits[0];
+      return {
+        html: `<h2>แนบอะไรไปกับอีเมล</h2><p class="lead">รูปที่เลือกจะแสดงในอีเมลขอบคุณ พร้อมไฟล์รายชื่อของคุณ (.vcf) เปลี่ยนได้ในหน้าตรวจอีเมลทุกฉบับ</p>
+          <button type="button" class="choice${d.def === "card" ? " on" : ""}" data-c="card"><span class="r"></span><span class="t"><b>นามบัตรของฉัน</b><small>${d.card ? "แตะรูปเพื่อเปลี่ยน" : "ถ่ายหรือเลือกรูปนามบัตรของคุณเอง"}</small></span><img id="oCardImg" alt="" ${d.card ? "" : "hidden"}></button>
+          <input id="oCardUp" type="file" accept="image/*" hidden>
+          <button type="button" class="choice${d.def !== "card" && d.def !== "none" ? " on" : ""}" data-c="kit"><span class="r"></span><span class="t"><b>โบรชัวร์</b><small>รูปปก + ลิงก์ไฟล์ PDF (เช่นลิงก์แชร์จาก Google Drive)</small></span><img id="oKitImg" alt="" ${kit0 ? "" : "hidden"}></button>
+          <div class="subform" id="oKitForm" ${d.def !== "card" && d.def !== "none" ? "" : "hidden"}>
+            <div class="group rows"><label><span>ชื่อ</span><input id="oKitName" value="${esc(kit0 ? kit0.name : "โบรชัวร์ 360TRUCK")}"></label><label><span>ลิงก์ PDF</span><input id="oKitLink" inputmode="url" placeholder="https://…" value="${esc(kit0 ? kit0.link : "")}"></label></div>
+            <label class="btn tint" for="oKitUp" style="text-align:center">${kit0 ? "เปลี่ยนรูปปก" : "เลือกรูปปกโบรชัวร์"}</label><input id="oKitUp" type="file" accept="image/*" hidden>
+          </div>
+          <button type="button" class="choice${d.def === "none" ? " on" : ""}" data-c="none"><span class="r"></span><span class="t"><b>ไม่แนบรูป</b><small>ส่งแต่ข้อความและไฟล์รายชื่อ</small></span></button>`,
+        next: "ต่อไป",
+        mount: () => {
+          if (d.card === "local") photoUrl("set:card").then(u => { if (u) $("#oCardImg").src = u; }); else if (d.card) setImgSrc("card").then(u => { if (u) $("#oCardImg").src = u; });
+          if (kit0) (kit0.imgNew ? photoUrl("set:kit:" + kit0.id) : assetUrl("set:kit:" + kit0.id, kit0.img)).then(u => { if (u) $("#oKitImg").src = u; });
+          const keep = () => { if (kit0) { kit0.name = $("#oKitName").value.trim(); kit0.link = $("#oKitLink").value.trim(); } };
+          $$("#onbBody .choice").forEach(b => b.addEventListener("click", () => {
+            keep(); const c = b.dataset.c;
+            if (c === "card") { d.def = "card"; if (!d.card) return $("#oCardUp").click(); }
+            else if (c === "kit") { d.def = kit0 ? kit0.id : "kit-new"; if (!kit0) { onbRender(); return $("#oKitUp").click(); } }
+            else d.def = "none";
+            onbRender();
+          }));
+          $("#oCardUp").addEventListener("change", async e => { const f = e.target.files[0]; if (!f) return; await blobPut("set:card", await shrink(f, 1800, .92)); urlCache.delete("set:card"); if (L.assets) delete L.assets["set:card"]; d.card = "local"; d.def = "card"; onbRender(); });
+          $("#oKitUp").addEventListener("change", async e => {
+            const f = e.target.files[0]; if (!f) return; keep();
+            const id = kit0 ? kit0.id : "k" + uid(); await blobPut("set:kit:" + id, await shrink(f, 1600, .9)); urlCache.delete("set:kit:" + id);
+            if (kit0) { kit0.img = "local"; kit0.imgNew = true; } else d.kits.unshift({ id, name: $("#oKitName").value.trim() || "โบรชัวร์ 360TRUCK", link: $("#oKitLink").value.trim(), img: "local", imgNew: true });
+            d.def = id; onbRender();
+          });
+          ["#oKitName", "#oKitLink"].forEach(x => $(x).addEventListener("input", keep));
+        },
+        onNext: async () => {
+          const k = d.kits[0]; if (k) { k.name = $("#oKitName").value.trim() || "โบรชัวร์"; k.link = $("#oKitLink").value.trim(); }
+          if (d.def === "kit-new") { onbErr("เลือกรูปปกโบรชัวร์ก่อน หรือเลือกแบบอื่น"); return false; }
+          if (k && k.link && !safeUrl(k.link)) { onbErr("ลิงก์ PDF ต้องขึ้นต้นด้วย https://"); return false; }
+          if (d.def === "card" && !d.card) { onbErr("เลือกรูปนามบัตรก่อน"); return false; }
+          if (d.card === "local") S.cardImg = "local";
+          S.kits = d.kits.map(x => ({ id: x.id, name: x.name, link: x.link, img: x.imgNew ? "local" : x.img }));
+          S.kitDefault = d.def === "none" ? "none" : d.def; S.u = Date.now(); await persist(); applySettings(); syncSoon(); return true;
+        } };
+    }
+    case "tutorial": return {
+      html: `<h2>วิธีเพิ่มนามบัตร</h2><p class="lead">ปัดดูทีละขั้น</p>
+        <div class="tut" id="oTut">${TUT.map((t, i) => `<div class="card">${mock(t[0])}<div><span class="n">${i + 1}</span><b>${esc(t[1])}</b></div><p>${esc(t[2])}</p></div>`).join("")}</div>
+        <div class="tutdots" id="oTutDots">${TUT.map((_, i) => `<i class="${i ? "" : "on"}"></i>`).join("")}</div>`,
+      next: "ลองสแกนใบแรก", alt: onb.only ? "ปิด" : "เสร็จ — ไปหน้านามบัตร", skip: false,
+      mount: () => { const box = $("#oTut"); box.addEventListener("scroll", () => { const i = Math.round(box.scrollLeft / (box.firstElementChild.offsetWidth + 14)); $$("#oTutDots i").forEach((x, j) => x.classList.toggle("on", j === i)); }, { passive: true }); },
+      onNext: () => { closeOnb(true); go("scan"); return false; },
+      onAlt: () => { closeOnb(true); go("me"); } };
+  }
+}
+function onbRender(){
+  if (!onb) return; onbErr("");
+  const st = onb.step, cfg = onbStep(st); onb.cfg = cfg;
+  const body = $("#onbBody"); body.innerHTML = cfg.html; body.scrollTop = 0; body.classList.remove("in"); void body.offsetWidth; body.classList.add("in");
+  const flow = onb.only ? [st] : ONB.filter(x => x !== "signin" || !signedRight() || st === "signin");
+  $("#onbDots").innerHTML = flow.length > 1 ? flow.map(x => `<i class="${x === st ? "on" : ""}"></i>`).join("") : "";
+  $("#onbBack").hidden = onb.only || cfg.back === false || flow.indexOf(st) <= 0;
+  $("#onbSkip").hidden = onb.only ? false : !(st === "attach" || st === "email");
+  $("#onbSkip").textContent = onb.only ? "ปิด" : "ข้าม";
+  $("#onbNext").textContent = cfg.next || "ต่อไป"; $("#onbNext").disabled = !!cfg.wait;
+  $("#onbAlt").hidden = !cfg.alt; $("#onbAlt").textContent = cfg.alt || "";
+  onb.wait = !!cfg.wait; if (cfg.mount) cfg.mount();
+}
+function onbNextStep(){ const flow = ONB.filter(x => x !== "signin"); const i = flow.indexOf(onb.step); onbGo(flow[Math.min(flow.length - 1, i + 1)]); }
+$("#onbNext").addEventListener("click", async () => { if (!onb) return; const ok = await onb.cfg.onNext(); if (ok && onb) onbNextStep(); });
+$("#onbAlt").addEventListener("click", () => { if (onb && onb.cfg.onAlt) onb.cfg.onAlt(); });
+$("#onbSkip").addEventListener("click", () => { if (!onb) return; if (onb.only) return closeOnb(false); onbNextStep(); });
+$("#onbBack").addEventListener("click", () => { if (!onb) return; const flow = ONB.filter(x => x !== "signin" || !signedRight()); const i = flow.indexOf(onb.step); if (i > 0) onbGo(flow[i - 1]); });
+$("#openTut").addEventListener("click", () => openOnb("tutorial", true));
+$("#openOnbAll").addEventListener("click", () => openOnb("who"));
 
 /* ================= who uses this phone (team accounts) ================= */
 function openWho(){ $("#whoAcc").textContent = S.account; $("#whoName").value = L.user.name; $("#whoPhone").value = L.user.phone; $("#whoLine").value = L.user.line; $("#whoErr").hidden = true; $("#whoSheet").classList.add("on"); }
@@ -1956,8 +2164,8 @@ async function mailPreview(){
 
 ${kit.linkLabel || "เปิดโบรชัวร์"}: ${kit.link}` : ""), jpg, kit);
   $("#mKitAtt").hidden = !jpg; $("#mCard").src = jpg || ""; $("#mKitName").innerHTML = kit ? `${esc(kit.id === "card" ? "นามบัตร" : kit.name)}<br><small>รูปในเนื้ออีเมล${safeUrl(kit.link) ? " + ลิงก์" : ""}</small>` : "";
-  const l = kitList(); $("#mKits").hidden = l.length < 2;
-  $("#mKits").innerHTML = l.map(k => `<button type="button" data-kit="${esc(k.id)}" class="${kit && k.id === kit.id ? "on" : ""}">${esc(k.id === "card" ? "นามบัตร" : k.name)}</button>`).join("");
+  const l = kitList(); $("#mKits").hidden = !l.length;
+  $("#mKits").innerHTML = l.map(k => `<button type="button" data-kit="${esc(k.id)}" class="${kit && k.id === kit.id ? "on" : ""}">${esc(k.id === "card" ? "นามบัตร" : k.name)}</button>`).join("") + `<button type="button" data-kit="none" class="${kit ? "" : "on"}">ไม่แนบรูป</button>`;
 }
 $("#mKits").addEventListener("click", e => {
   const b = e.target.closest("[data-kit]"); if (!b || !mailCur) return; mailCur.kit = b.dataset.kit;
@@ -1969,7 +2177,7 @@ function mailLangPaint(){ $$("#mLang button").forEach(b => b.classList.toggle("o
 async function openMail(id, note){
   const c = D.cards.find(x => x.id === id); if (!c) return;
   if (!cardJpeg) await renderCard();
-  const m = c.mail || {}, lang = m.lang || langOf(c), kit = (kitOf(m.kit) || {}).id;
+  const m = c.mail || {}, lang = m.lang || langOf(c), kit = m.kit === "none" || (!m.kit && S.kitDefault === "none") ? "none" : (kitOf(m.kit) || {}).id;
   /* a sent email opens as a fresh copy to send again; an unsent one opens as you left it */
   const keep = m.subject && m.body && m.status !== "sent" && m.status !== "skipped";
   const t = keep ? { subject: m.subject, body: m.body } : composeMail(c, lang, kit);
@@ -2196,7 +2404,7 @@ function drawKits(){
 function drawKitDef(){
   readKits(); const card = !isTeam() || pendCard === "local" || (pendCard === "keep" && S.cardImg);
   const opts = (card ? [["card", "นามบัตร"]] : []).concat(pendKits.map(k => [k.id, k.name || "โบรชัวร์"]));
-  $("#kitDef").innerHTML = opts.length ? opts.map(([v, t]) => `<option value="${esc(v)}"${v === S.kitDefault ? " selected" : ""}>${esc(t)}</option>`).join("") : '<option value="">ยังไม่มี — อีเมลจะไม่มีรูปแนบ</option>';
+  $("#kitDef").innerHTML = opts.concat([["none", "ไม่แนบรูป"]]).map(([v, t]) => `<option value="${esc(v)}"${v === S.kitDefault || (!opts.length && v === "none") ? " selected" : ""}>${esc(t)}</option>`).join("");
 }
 $("#kitRows").addEventListener("click", e => { const b = e.target.closest("[data-rmkit]"); if (!b) return; readKits(); const id = b.closest(".kit").dataset.id; pendKits = pendKits.filter(k => k.id !== id); drawKits(); });
 $("#kitRows").addEventListener("input", () => drawKitDef());
@@ -2311,6 +2519,8 @@ function applySettings(){ setDirty = false; document.body.classList.toggle("team
   (async () => { for (const d of drafts.filter(x => x.orig && !x.manual && !x.useOrig && x.detV !== DET_V)) { await rescan(d, true); saveDrafts(); drawQueue(); await new Promise(r => setTimeout(r, 0)); } })();
   if (backFromGoogle) { const v = localStorage.getItem("cdView"); localStorage.removeItem("cdView"); if (v && !drafts.length && !ed && $("#" + v)) go(v.replace(/^v-/, "")); }
   if (authErr) toast(authErr, 6000);
+  if (localStorage.getItem("cdInviteNew")) { localStorage.removeItem("cdInviteNew"); openOnb("welcome"); }
+  else if (localStorage.getItem("cdOnb")) openOnb(localStorage.getItem("cdOnb"));
   if (token()) { localStorage.setItem("cdEver", "1"); sync(); } else if (everSigned() && !backFromGoogle) setTimeout(renewQuietly, 800);
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
 })();
