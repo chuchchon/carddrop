@@ -228,6 +228,17 @@ form{display:block;margin-top:6px}
 .viewer{position:fixed;inset:0;z-index:40;background:#000;touch-action:none;overflow:hidden;animation:dim .2s ease}
 .viewer[hidden]{display:none}
 body.team .owner-only,body:not(.team) .team-only{display:none!important}
+.backbtn{background:none;border:0;color:var(--lime);font:inherit;font-size:17px;padding:4px 0;margin:2px 0 -4px;cursor:pointer}
+.setpage.in{animation:pushin .32s cubic-bezier(.2,.8,.2,1)}
+@keyframes pushin{from{opacity:.35;transform:translateX(28px)}to{opacity:1;transform:none}}
+.setmenu .cell{display:flex;align-items:center;gap:12px;width:100%;text-align:left}
+.setmenu .cell>span:not(.chev):not(.avatar):not(.pt){flex:1}
+.setmenu .val{color:var(--mute);font-size:15px;white-space:nowrap;max-width:42%;overflow:hidden;text-overflow:ellipsis}
+.sec.dup{display:none}.setmenu .danger span{color:var(--bad)!important}
+.setmenu .profile{padding-top:12px;padding-bottom:12px}
+.setmenu .avatar{width:58px;height:58px;border-radius:50%;background:linear-gradient(145deg,var(--lime),#9aa30f);color:var(--lime-ink);display:grid;place-items:center;font-size:26px;font-weight:700;flex:none}
+.setmenu .pt{flex:1;display:grid;gap:2px;min-width:0}.setmenu .pt b{font-size:20px;font-weight:600}.setmenu .pt small{color:var(--mute);font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.setpage>.sec:first-child,.setpage>.team-only:first-child>.sec:first-child{margin-top:4px}
 body.fresh #v-me .sec,body.fresh #links,body.fresh #v-me .foot,body.fresh #shareBtn,body.fresh #myCard .hint{display:none!important}
 .kit{display:flex;gap:12px;align-items:center;padding:10px 12px 10px 16px;border-bottom:.5px solid rgba(84,84,88,.6)}
 .kit img{width:52px;height:52px;object-fit:cover;border-radius:8px;background:#000;flex:none}
@@ -379,13 +390,31 @@ body.fresh #v-me .sec,body.fresh #links,body.fresh #v-me .foot,body.fresh #share
     <div class="filt" id="filt"><button type="button" data-f="" class="on">ทั้งหมด</button><button type="button" data-f="unsent">ยังไม่ส่งอีเมล</button></div>
     <div class="quick" id="gLinks"></div>
     <div class="list" id="list"></div>
-    <p class="foot" style="text-align:center;margin-top:24px">CardDrop <span id="appV"></span></p>
   </section>
 
   <!-- SETTINGS -->
   <section class="view" id="v-set" data-title="ตั้งค่า">
-    <h1 class="large">ตั้งค่า</h1>
+    <button type="button" class="backbtn" id="setBack" hidden>‹ ตั้งค่า</button>
+    <h1 class="large" id="setTitle">ตั้งค่า</h1>
     <form id="setForm" novalidate>
+      <p class="err" id="setErr" hidden></p>
+      <div class="setmenu" id="setMenu">
+        <div class="group"><button type="button" class="cell profile" data-open="me"><span class="avatar" id="smAv">S</span><span class="pt"><b id="smName"></b><small id="smSub"></small></span></button></div>
+        <div class="group">
+          <button type="button" class="cell" data-open="card"><i class="ic" style="background:var(--lime);color:var(--lime-ink)">▭</i><span>นามบัตร</span><small class="val" id="smCard"></small></button>
+          <button type="button" class="cell" data-open="kits"><i class="ic" style="background:#0A84FF;color:#fff">⎘</i><span>สิ่งที่แนบไปกับอีเมล</span><small class="val" id="smKits"></small></button>
+          <button type="button" class="cell" data-open="mail"><i class="ic" style="background:#30D158;color:#fff">✉</i><span>อีเมลและข้อความแชท</span><small class="val" id="smMail"></small></button>
+          <button type="button" class="cell" data-open="links"><i class="ic" style="background:#BF5AF2;color:#fff">⌗</i><span>ลิงก์ให้คนตรงหน้าสแกน</span><small class="val" id="smLinks"></small></button>
+        </div>
+        <div class="group">
+          <button type="button" class="cell" data-open="ocr"><i class="ic" style="background:#FF9F0A;color:#fff">◎</i><span>อ่านนามบัตรอัตโนมัติ</span><small class="val" id="smOcr"></small></button>
+          <button type="button" class="cell" data-open="google"><i class="ic" style="background:#5E5CE6;color:#fff">G</i><span>Google</span><small class="val" id="smGoogle"></small></button>
+          <button type="button" class="cell owner-only" data-open="team"><i class="ic" style="background:#64D2FF;color:#002b3a">⚑</i><span>ทีม</span><small class="val" id="smTeam"></small></button>
+        </div>
+        <div class="group"><button class="cell plainc danger" type="button" id="setDefaults"><span>คืนค่าเริ่มต้นทั้งหมด</span></button></div>
+        <p class="foot" style="text-align:center;margin-top:18px">CardDrop <span id="appV"></span></p>
+      </div>
+      <div class="setpage" data-page="me" data-title="ข้อมูลของผม" hidden>
       <div class="team-only">
         <div class="sec">ผู้ใช้เครื่องนี้</div>
         <div class="group"><button type="button" class="cell" id="whoEdit"><i class="ic" style="background:#0A84FF">👤</i><span id="whoNow">ยังไม่ได้ตั้งชื่อ</span></button></div>
@@ -406,7 +435,8 @@ body.fresh #v-me .sec,body.fresh #links,body.fresh #v-me .foot,body.fresh #share
         <label><span>Facebook</span><input data-k="facebook"></label>
         <label><span>LinkedIn</span><input data-k="linkedin"></label>
       </div>
-
+      </div>
+      <div class="setpage" data-page="card" data-title="นามบัตร" hidden>
       <div class="sec">หน้านามบัตร</div>
       <div class="group rows">
         <label class="check owner-only"><span>QR LINE ข้างรูปผม</span><input type="checkbox" data-k="showQr"></label>
@@ -414,21 +444,6 @@ body.fresh #v-me .sec,body.fresh #links,body.fresh #v-me .foot,body.fresh #share
         <label class="owner-only"><span>ข้อความใต้ QR</span><input data-k="qrCaption"></label>
         <div class="row-item thumbset owner-only"><img id="setQr" alt="QR LINE ปัจจุบัน"><div><label class="link-btn" for="qrUp">เปลี่ยนรูป QR LINE</label><input id="qrUp" type="file" accept="image/*" hidden><button type="button" class="link-btn" id="qrReset">ใช้ QR เดิม</button></div></div>
         <div class="row-item thumbset"><img id="setCard" alt="รูปนามบัตรต้นแบบ"><div><label class="link-btn" for="cardUp">เปลี่ยนรูปนามบัตร</label><input id="cardUp" type="file" accept="image/*" hidden><button type="button" class="link-btn" id="cardReset">ใช้รูปเดิม</button></div></div>
-      </div>
-      <div class="sec">สิ่งที่แนบไปกับอีเมล</div>
-      <div class="group">
-        <div id="kitRows"></div>
-        <label class="cell add" for="kitUp"><i class="ic" style="background:var(--ok)">＋</i><span>เพิ่มโบรชัวร์ (รูปปก)</span></label><input id="kitUp" type="file" accept="image/*" hidden>
-      </div>
-      <div class="group rows" style="margin-top:10px"><label><span>แนบเป็นค่าเริ่มต้น</span><select id="kitDef"></select></label></div>
-      <p class="foot">ใส่รูปปกโบรชัวร์ และลิงก์ไฟล์ PDF (เช่นลิงก์แชร์จาก Google Drive) อีเมลจะแสดงรูปปกพร้อมปุ่มเปิดโบรชัวร์ ไม่แนบไฟล์ใหญ่ เลือกเปลี่ยนได้ในหน้าตรวจอีเมลทุกฉบับ</p>
-
-      <div class="owner-only">
-        <div class="sec">ทีม (ใช้ CardDrop ด้วยบัญชีบริษัท)</div>
-        <div class="group" id="teamRows"></div>
-        <div class="group rows" style="margin-top:10px"><label><span>เพิ่มบัญชี</span><input id="teamAdd" type="email" inputmode="email" placeholder="เช่น marketing@360truck.co"></label></div>
-        <button type="button" class="btn tint" id="teamSetup" style="margin-top:10px">สร้าง/อัปเดตโฟลเดอร์และชีตทีม</button>
-        <p class="foot" id="teamMsg">ระบบสร้างโฟลเดอร์ “CardDrop ทีม” ใน Drive ของคุณ แยกโฟลเดอร์ย่อยต่อบัญชี และชีต “CardDrop – ลีดทีม” แยกแท็บต่อบัญชี แชร์ให้แต่ละบัญชีเฉพาะของตัวเอง แล้วส่งลิงก์เชิญให้ทีมเปิดบนมือถือ</p>
       </div>
 
       <div class="sec owner-only">รูปนามบัตรที่บันทึกไว้</div>
@@ -438,13 +453,17 @@ body.fresh #v-me .sec,body.fresh #links,body.fresh #v-me .foot,body.fresh #share
       </div>
       <p class="foot owner-only" id="bulkMsg">ตัดเฉพาะรูปที่หาขอบเจอ รูปต้นฉบับเก็บไว้ในเครื่อง ย้อนกลับได้ทุกเมื่อ รูปที่แก้จะส่งขึ้น Drive ใหม่และอัปเดตลิงก์ใน Sheet ให้</p>
       <p class="foot owner-only" style="margin-top:14px">ชื่อ เบอร์ อีเมล และ LinkedIn บนนามบัตรเป็นส่วนหนึ่งของรูป ถ้าเปลี่ยนให้อัปโหลดรูปใหม่ ถ้ารูปใหม่วางแบบต่างจากเดิม ให้ปิด QR และแถวที่ระบบเพิ่ม</p>
-
-      <div class="sec">ลิงก์ให้คนตรงหน้าสแกน</div>
-      <div class="group">
-        <div id="linkRows"></div>
-        <button type="button" class="cell add" id="addLink"><i class="ic" style="background:var(--ok)">＋</i><span>เพิ่มลิงก์</span></button>
       </div>
-
+      <div class="setpage" data-page="kits" data-title="สิ่งที่แนบไปกับอีเมล" hidden>
+      <div class="sec">สิ่งที่แนบไปกับอีเมล</div>
+      <div class="group">
+        <div id="kitRows"></div>
+        <label class="cell add" for="kitUp"><i class="ic" style="background:var(--ok)">＋</i><span>เพิ่มโบรชัวร์ (รูปปก)</span></label><input id="kitUp" type="file" accept="image/*" hidden>
+      </div>
+      <div class="group rows" style="margin-top:10px"><label><span>แนบเป็นค่าเริ่มต้น</span><select id="kitDef"></select></label></div>
+      <p class="foot">ใส่รูปปกโบรชัวร์ และลิงก์ไฟล์ PDF (เช่นลิงก์แชร์จาก Google Drive) อีเมลจะแสดงรูปปกพร้อมปุ่มเปิดโบรชัวร์ ไม่แนบไฟล์ใหญ่ เลือกเปลี่ยนได้ในหน้าตรวจอีเมลทุกฉบับ</p>
+      </div>
+      <div class="setpage" data-page="mail" data-title="อีเมลและข้อความแชท" hidden>
       <div class="sec">อีเมลยินดีที่ได้รู้จัก</div>
       <div class="group rows">
         <label class="check"><span>เปิดส่งอีเมลไว้ทุกครั้ง</span><input type="checkbox" data-k="mailDefault"></label>
@@ -463,7 +482,15 @@ body.fresh #v-me .sec,body.fresh #links,body.fresh #v-me .foot,body.fresh #share
         <label class="stack"><span>Message (English)</span><textarea data-k="chatEn" rows="7"></textarea></label>
       </div>
       <p class="foot">ใช้ได้: {name} {company} {place}</p>
-
+      </div>
+      <div class="setpage" data-page="links" data-title="ลิงก์ให้คนตรงหน้าสแกน" hidden>
+      <div class="sec">ลิงก์ให้คนตรงหน้าสแกน</div>
+      <div class="group">
+        <div id="linkRows"></div>
+        <button type="button" class="cell add" id="addLink"><i class="ic" style="background:var(--ok)">＋</i><span>เพิ่มลิงก์</span></button>
+      </div>
+      </div>
+      <div class="setpage" data-page="ocr" data-title="อ่านนามบัตรอัตโนมัติ" hidden>
       <div class="sec">อ่านนามบัตรอัตโนมัติ</div>
       <div class="group rows">
         <label class="check"><span>ตัดขอบและปรับภาพอัตโนมัติ</span><input type="checkbox" data-k="autoScan"></label>
@@ -477,7 +504,8 @@ body.fresh #v-me .sec,body.fresh #links,body.fresh #v-me .foot,body.fresh #share
         <button type="button" class="cell" id="testKey"><span class="tint-text">ทดสอบ key</span></button>
       </div>
       <p class="foot" id="keyMsg">key เก็บในเครื่องนี้และในไฟล์ข้อมูลใน Google Drive ของคุณเท่านั้น ไม่ขึ้น GitHub</p>
-
+      </div>
+      <div class="setpage" data-page="google" data-title="Google" hidden>
       <div class="sec">Google (Gmail · Drive · Sheet)</div>
       <div class="group rows">
         <label><span>บัญชี</span><input data-k="account" inputmode="email"></label>
@@ -487,10 +515,17 @@ body.fresh #v-me .sec,body.fresh #links,body.fresh #v-me .foot,body.fresh #share
         <label class="check"><span>ลงแถวใน Google Sheet</span><input type="checkbox" data-k="sheetOn"></label>
         <details><summary>ขั้นสูง</summary><label><span>Client ID</span><input data-k="clientId" spellcheck="false"></label></details>
       </div>
-
-      <p class="err" id="setErr" hidden></p>
-      <button class="btn lime big" type="submit">บันทึกการตั้งค่า</button>
-      <button class="btn plain danger" type="button" id="setDefaults">คืนค่าเริ่มต้นทั้งหมด</button>
+      </div>
+      <div class="setpage" data-page="team" data-title="ทีม" hidden>
+      <div class="owner-only">
+        <div class="sec">ทีม (ใช้ CardDrop ด้วยบัญชีบริษัท)</div>
+        <div class="group" id="teamRows"></div>
+        <div class="group rows" style="margin-top:10px"><label><span>เพิ่มบัญชี</span><input id="teamAdd" type="email" inputmode="email" placeholder="เช่น marketing@360truck.co"></label></div>
+        <button type="button" class="btn tint" id="teamSetup" style="margin-top:10px">สร้าง/อัปเดตโฟลเดอร์และชีตทีม</button>
+        <p class="foot" id="teamMsg">ระบบสร้างโฟลเดอร์ “CardDrop ทีม” ใน Drive ของคุณ แยกโฟลเดอร์ย่อยต่อบัญชี และชีต “CardDrop – ลีดทีม” แยกแท็บต่อบัญชี แชร์ให้แต่ละบัญชีเฉพาะของตัวเอง แล้วส่งลิงก์เชิญให้ทีมเปิดบนมือถือ</p>
+      </div>
+      </div>
+      <button type="submit" hidden></button>
     </form>
   </section>
 </div>
@@ -593,7 +628,7 @@ const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 
 const toast = (m, ms = 3200) => { const t = $("#toast"); t.textContent = m; t.classList.add("on"); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove("on"), ms); };
 const FIELDS = ["name_th","name_en","title","company","email","mobile","phone","line","website","address","place","note"];
 const validEmail = e => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e || "");
-const DEF_CARD = "namecard.jpg", DEF_QR = "line-qr.png", APP_V = "27 พ.ย. 69 · 10", DET_V = 4;
+const DEF_CARD = "namecard.jpg", DEF_QR = "line-qr.png", APP_V = "27 พ.ย. 69 · 11", DET_V = 4;
 
 const DEF = {
   nameTh: "ชัชชน (Sea)", nameEn: "Chuchchon Saenjaibal (Sea)", title: "Chief Executive Officer", company: "360TRUCK & 360TECHX",
@@ -690,6 +725,8 @@ async function hydrate(root){
 
 /* ================= navigation & sheets ================= */
 function go(v){
+  if (v === "set" && setPg && $("#v-set").classList.contains("on")) { closeSetPage(); return; }   /* tap ตั้งค่า again: back to the list */
+  if (v !== "set" && setPg && setDirty) saveSettings(true);
   $$(".view").forEach(e => e.classList.toggle("on", e.id === "v-" + v)); $$(".tabs button").forEach(b => b.classList.toggle("on", b.dataset.go === v));
   const sec = $("#v-" + v); $("#navTitle").textContent = (sec && sec.dataset.title) || "CardDrop"; window.scrollTo(0, 0); onScroll(true);
 }
@@ -1748,7 +1785,7 @@ function stash(){
 }
 let asT = 0; const autosave = () => { clearTimeout(asT); asT = setTimeout(stash, 400); };
 $("#form").addEventListener("input", autosave); $("#form").addEventListener("change", autosave);
-const flushAll = () => { clearTimeout(asT); stash(); mailFlush(); };
+const flushAll = () => { clearTimeout(asT); stash(); mailFlush(); if (setDirty) saveSettings(true); };
 document.addEventListener("visibilitychange", () => { if (document.hidden) flushAll(); });
 window.addEventListener("pagehide", flushAll);
 function readForm(){ const f = $("#form"), r = {}; FIELDS.forEach(k => r[k] = f[k].value.trim()); return r; }
@@ -2141,7 +2178,7 @@ function fillSettings(){
   setImgSrc("qr").then(u => $("#setQr").src = S.qrImg ? u : DEF_QR);
   setImgSrc("card").then(u => $("#setCard").src = S.cardImg && u ? u : (isTeam() ? placeholder("ไม่มีรูป", "") : DEF_CARD));
   $("#cardReset").textContent = isTeam() ? "ลบรูป" : "ใช้รูปเดิม"; $("#secMe").textContent = isTeam() ? "ข้อมูลบัญชี" : "ข้อมูลของผม";
-  drawKits(); drawTeam(); drawTeamLink(); $("#whoNow").textContent = L.user.name ? `${L.user.name}${L.user.phone ? " · " + L.user.phone : ""}` : "ยังไม่ได้ตั้งชื่อ — แตะเพื่อตั้ง";
+  drawKits(); drawTeam(); drawTeamLink(); drawSetMenu(); $("#whoNow").textContent = L.user.name ? `${L.user.name}${L.user.phone ? " · " + L.user.phone : ""}` : "ยังไม่ได้ตั้งชื่อ — แตะเพื่อตั้ง";
 }
 const linkRow = (l = {}) => `<div class="lrow" data-icon="${esc(l.icon || "")}"><input placeholder="ชื่อปุ่ม" value="${esc(l.label || "")}"><input placeholder="https://…" inputmode="url" value="${esc(l.url || "")}"><button type="button" class="x" data-rm aria-label="ลบลิงก์">✕</button></div>`;
 $("#addLink").addEventListener("click", () => $("#linkRows").insertAdjacentHTML("beforeend", linkRow()));
@@ -2171,18 +2208,53 @@ $("#kitUp").addEventListener("change", async e => {
 });
 $("#whoEdit").addEventListener("click", openWho);
 $("#setDefaults").addEventListener("click", e => { const b = e.currentTarget; if (b.dataset.sure !== "1") { b.dataset.sure = "1"; b.textContent = "แตะอีกครั้งเพื่อยืนยัน"; return; } b.dataset.sure = ""; b.textContent = "คืนค่าเริ่มต้นทั้งหมด"; const k = [S.apiKey, S.geminiKey]; S = clone(DEF); [S.apiKey, S.geminiKey] = k; fillSettings(); toast("คืนค่าเริ่มต้นแล้ว กดบันทึกเพื่อใช้"); });
-$("#setForm").addEventListener("submit", async e => {
-  e.preventDefault();
+async function saveSettings(quiet){
   const n = clone(S);
   $$("#setForm [data-k]").forEach(el => n[el.dataset.k] = el.type === "checkbox" ? el.checked : el.value.trim());
   n.links = $$("#linkRows .lrow").map(r => { const [a, b] = r.querySelectorAll("input"); return { label: a.value.trim(), url: b.value.trim(), icon: r.dataset.icon || "↗" }; }).filter(l => l.label && l.url);
-  const bad = n.links.find(l => !safeUrl(l.url)); if (bad) { $("#setErr").textContent = "ลิงก์ “" + bad.label + "” ต้องขึ้นต้นด้วย https://"; $("#setErr").hidden = false; return; }
-  readKits(); const badKit = pendKits.find(k => k.link && !safeUrl(k.link)); if (badKit) { $("#setErr").textContent = "ลิงก์ของ “" + (badKit.name || "โบรชัวร์") + "” ต้องขึ้นต้นด้วย https://"; $("#setErr").hidden = false; return; }
+  const bad = n.links.find(l => !safeUrl(l.url)); if (bad) { $("#setErr").textContent = "ลิงก์ “" + bad.label + "” ต้องขึ้นต้นด้วย https://"; $("#setErr").hidden = false; $("#setErr").scrollIntoView({ block: "center" }); return false; }
+  readKits(); const badKit = pendKits.find(k => k.link && !safeUrl(k.link)); if (badKit) { $("#setErr").textContent = "ลิงก์ของ “" + (badKit.name || "โบรชัวร์") + "” ต้องขึ้นต้นด้วย https://"; $("#setErr").hidden = false; $("#setErr").scrollIntoView({ block: "center" }); return false; }
   $("#setErr").hidden = true; n.qrImg = pendQr === "keep" ? S.qrImg : pendQr; n.cardImg = pendCard === "keep" ? S.cardImg : pendCard; n.u = Date.now();
   n.kits = pendKits.map(k => { const old = (S.kits || []).find(x => x.id === k.id); const o = { id: k.id, name: k.name || "โบรชัวร์", link: k.link || "", img: k.imgNew ? "local" : (old ? old.img : k.img) }; return o; });
   n.kitDefault = $("#kitDef").value || "card"; n.team = S.team; n.teamLink = S.teamLink;
-  D.settings = n; S = n; await persist(); applySettings(); toast("บันทึกการตั้งค่าแล้ว"); syncSoon();
-});
+  D.settings = n; S = n; await persist(); applySettings(); if (!quiet) toast("บันทึกแล้ว", 1500); setDirty = false; syncSoon(); return true;
+}
+$("#setForm").addEventListener("submit", e => { e.preventDefault(); saveSettings(); });
+
+/* ---- Settings as an iPhone-style list: tap a row to open its page, ‹ to go back; changes save on the way out ---- */
+let setDirty = false, setPg = null;
+["input", "change"].forEach(ev => $("#setForm").addEventListener(ev, e => { if (e.target.closest(".setpage")) setDirty = true; }));
+$("#setForm").addEventListener("click", e => { if (e.target.closest("[data-rmkit], [data-rm], #addLink, #qrReset, #cardReset")) setDirty = true; });
+["#kitUp", "#cardUp", "#qrUp"].forEach(sel => $(sel).addEventListener("change", () => setDirty = true));
+async function leaveSetPage(){ if (setDirty && !(await saveSettings())) return false; return true; }
+function showSetPage(name, push){
+  setPg = name || null; $("#setErr").hidden = true;
+  $$("#setForm .setpage").forEach(el => { const on = el.dataset.page === name; el.hidden = !on; if (on) { el.classList.remove("in"); void el.offsetWidth; el.classList.add("in"); } });
+  $("#setMenu").hidden = !!name; $("#setBack").hidden = !name;
+  if (name) { const pg0 = $(`#setForm .setpage[data-page="${name}"]`), first = pg0.querySelector(".sec"); $$("#setForm .sec.dup").forEach(x => x.classList.remove("dup"));
+    if (first && first.parentElement === pg0 && first.textContent.trim() === pg0.dataset.title) first.classList.add("dup"); }
+  const pg = name && $(`#setForm .setpage[data-page="${name}"]`);
+  const t = !name ? "ตั้งค่า" : name === "me" && isTeam() ? "บัญชีและผู้ใช้" : pg.dataset.title;
+  $("#setTitle").textContent = t; $("#v-set").dataset.title = t; $("#navTitle").textContent = t; window.scrollTo(0, 0);
+  if (name && push) history.pushState({ cdSet: name }, "");
+  if (!name) drawSetMenu();
+}
+$("#setMenu").addEventListener("click", e => { const b = e.target.closest("[data-open]"); if (b) showSetPage(b.dataset.open, true); });
+$("#setBack").addEventListener("click", () => { if (history.state && history.state.cdSet) history.back(); else closeSetPage(); });
+async function closeSetPage(){ if (!(await leaveSetPage())) { if (setPg) history.pushState({ cdSet: setPg }, ""); return; } showSetPage(null); }
+addEventListener("popstate", () => { if (setPg) closeSetPage(); });
+function drawSetMenu(){
+  const nm = isTeam() ? (L.user.name || "ยังไม่ได้ตั้งชื่อผู้ใช้") : (S.nameTh || S.nameEn || "ข้อมูลของผม");
+  $("#smName").textContent = nm; $("#smSub").textContent = isTeam() ? `${S.account} · เครื่องนี้` : [S.title, S.account].filter(Boolean).join(" · ");
+  $("#smAv").textContent = (String(nm).replace(/[^\p{L}]/gu, "")[0] || "C").toUpperCase();
+  $("#smCard").textContent = isTeam() ? (S.cardImg ? "มีรูป" : "ยังไม่มีรูป") : (S.cardImg ? "รูปของคุณ" : "แบบเดิม");
+  const k = kitList(); $("#smKits").textContent = k.length ? k.length + " รายการ" : "ยังไม่มี";
+  $("#smMail").textContent = S.mailDefault ? "ส่งทุกครั้ง" : "ปิดไว้";
+  $("#smLinks").textContent = (S.links || []).length + " ลิงก์";
+  $("#smOcr").textContent = (S.ocrProvider === "claude" ? S.apiKey : S.geminiKey) ? (S.ocrProvider === "claude" ? "Claude" : "Gemini") : "ยังไม่ใส่ key";
+  $("#smGoogle").textContent = token() ? "เชื่อมแล้ว" : "ยังไม่เข้าสู่ระบบ";
+  $("#smTeam").textContent = S.team && S.team.members && S.team.members.length ? S.team.members.length + " บัญชี" : "ยังไม่ตั้ง";
+}
 async function bulkPhotos(undo){
   const msg = $("#bulkMsg"), list = D.cards.filter(c => c.photo); let done = 0, skip = 0, i = 0;
   for (const c of list) {
@@ -2213,7 +2285,7 @@ $("#testKey").addEventListener("click", async () => {
   catch (x) { el.textContent = x.code === "busy" || x.code === "rate" ? "key ใช้ได้ แต่ Gemini ทุกรุ่นมีคนใช้เยอะตอนนี้ — ลองใหม่อีกสักครู่ (กดบันทึกการตั้งค่าได้เลย)" : (OCR_ERR[x.code] || "ใช้ไม่ได้") + (x.message ? " · " + x.message : ""); }
   Object.assign(S, keep);
 });
-function applySettings(){ document.body.classList.toggle("team", isTeam()); document.body.classList.toggle("fresh", !!L.fresh); $("#appV").textContent = "เวอร์ชัน " + APP_V; fillSettings(); drawLinks(); renderCard(); $("#mFrom").value = S.account || S.email; paintCloud(); }
+function applySettings(){ setDirty = false; document.body.classList.toggle("team", isTeam()); document.body.classList.toggle("fresh", !!L.fresh); $("#appV").textContent = "เวอร์ชัน " + APP_V; fillSettings(); drawLinks(); renderCard(); $("#mFrom").value = S.account || S.email; paintCloud(); }
 
 /* ================= boot ================= */
 (async () => {
