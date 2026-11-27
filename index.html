@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>CardDrop</title>
 <meta name="theme-color" content="#000000">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -23,7 +23,7 @@
   --font:Inter,"IBM Plex Sans Thai",-apple-system,system-ui,sans-serif}
 :root[data-theme=light],:root[data-theme=dark]{color-scheme:dark}
 *{box-sizing:border-box;min-width:0;-webkit-tap-highlight-color:transparent}
-html{scroll-padding-top:110px}
+html{scroll-padding-top:110px;overflow-x:clip;touch-action:pan-x pan-y;-webkit-text-size-adjust:100%;text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.4 var(--font);letter-spacing:-.022em;overflow-x:clip;padding-bottom:calc(110px + env(safe-area-inset-bottom));-webkit-font-smoothing:antialiased}
 svg{fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 h1,h2,h3{font-family:var(--font);margin:0}
@@ -667,7 +667,7 @@ const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 
 const toast = (m, ms = 3200) => { const t = $("#toast"); t.textContent = m; t.classList.add("on"); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove("on"), ms); };
 const FIELDS = ["name_th","name_en","title","company","email","mobile","phone","line","website","address","place","note"];
 const validEmail = e => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e || "");
-const DEF_CARD = "namecard.jpg", DEF_QR = "line-qr.png", APP_V = "27 พ.ย. 69 · 13", DET_V = 4;
+const DEF_CARD = "namecard.jpg", DEF_QR = "line-qr.png", APP_V = "27 พ.ย. 69 · 14", DET_V = 4;
 
 const DEF = {
   nameTh: "ชัชชน (Sea)", nameEn: "Chuchchon Saenjaibal (Sea)", title: "Chief Executive Officer", company: "360TRUCK & 360TECHX",
