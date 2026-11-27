@@ -593,7 +593,7 @@ const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 
 const toast = (m, ms = 3200) => { const t = $("#toast"); t.textContent = m; t.classList.add("on"); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove("on"), ms); };
 const FIELDS = ["name_th","name_en","title","company","email","mobile","phone","line","website","address","place","note"];
 const validEmail = e => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e || "");
-const DEF_CARD = "namecard.jpg", DEF_QR = "line-qr.png", APP_V = "27 พ.ย. 69 · 8", DET_V = 4;
+const DEF_CARD = "namecard.jpg", DEF_QR = "line-qr.png", APP_V = "27 พ.ย. 69 · 9", DET_V = 4;
 
 const DEF = {
   nameTh: "ชัชชน (Sea)", nameEn: "Chuchchon Saenjaibal (Sea)", title: "Chief Executive Officer", company: "360TRUCK & 360TECHX",
@@ -619,7 +619,7 @@ const DEF = {
   chatTh: "สวัสดีครับคุณ{name} ผมชัชชน (Sea) จาก 360TRUCK ยินดีที่ได้รู้จักกันที่{place}ครับ 🙏\nเก็บช่องทางติดต่อผมไว้ได้เลยครับ\n📞 089 892 5967\n💬 LINE: seachuchchon\n✉️ chuchchon@360truck.co\n🌐 https://www.360truck.co\n🚚 แอปจองรถบรรทุก 360TRUCK จองรถ: https://apps.apple.com/th/app/id1630878209 (iPhone) · https://play.google.com/store/apps/details?id=com.threesixtysupplychain.shipperapp (Android)",
   chatEn: "Hi {name}, this is Sea (Chuchchon) from 360TRUCK. Great to meet you at {place}! 🙏\nHere's how to reach me:\n📞 +66 89 892 5967\n💬 LINE: seachuchchon\n✉️ chuchchon@360truck.co\n🌐 https://www.360truck.co",
   mailDefault: true, driveOn: true, sheetOn: true,
-  account: "chuchchon@360truck.co", clientId: "935886786333-g79hk4e4htmqh2dggggfpd8jertf0g5g.apps.googleusercontent.com",
+  account: "chuchchon@360truck.co", clientId: "192399279847-oan2nmo4j2htd7eoalggcgvnu14r8ma9.apps.googleusercontent.com",
   sheetId: "1q3IqRcuVLpKRvl7NJ2UxVdBZLiTUiWRqOrKTaFjjWec", sheetTab: "Namecards",
   ocrProvider: "gemini", geminiKey: "", geminiModel: "gemini-flash-lite-latest", autoScan: true, apiKey: "", model: "claude-sonnet-5-5", cardLink: "", cardLinkKey: ""
 };
@@ -714,7 +714,9 @@ const wantScopes = () => (S.teamLink || pendingInvite() ? SCOPES.concat(DRIVE_AL
 function tokScopes(){ try { const t = JSON.parse(sessionStorage.getItem("cdTok") || localStorage.getItem("cdTok") || "null"); return (t && t.sc) || ""; } catch { return ""; } }
 const hasDriveAll = () => tokScopes().split(/\s+/).includes(DRIVE_ALL);
 const appBase = () => location.origin + location.pathname.replace(/index\.html$/, ""); /* this page is its own redirect URI */
-function gcid(){ if (S.clientId) return S.clientId; for (const k of ["tp:gcid", "hkd26:gcid"]) { try { const v = JSON.parse(localStorage.getItem(k) || '""'); if (v) return String(v); } catch {} } return DEF.clientId; }
+/* CardDrop has its own Google project under 360truck.co (Internal: anyone @360truck.co can sign in); older phones stored the trip-app client */
+const OLD_GCID = "935886786333-g79hk4e4htmqh2dggggfpd8jertf0g5g.apps.googleusercontent.com";
+function gcid(){ if (S.clientId && S.clientId !== OLD_GCID) return S.clientId; return DEF.clientId; }
 function token(){ try { const t = JSON.parse(sessionStorage.getItem("cdTok") || localStorage.getItem("cdTok") || "null"); if (t && t.exp > Date.now() + 90000) return t.tok; } catch {} return ""; }
 async function signIn(){
   stash(); await saveDrafts(); await persist();
@@ -2199,7 +2201,8 @@ function applySettings(){ document.body.classList.toggle("team", isTeam()); docu
   try {
     const d = await IDB.get("kv", "data"); if (!d) L.fresh = true;
     if (d) { D = d; D.settings = { ...baseFor(d.settings), ...(d.settings || {}) }; S = D.settings;
-      if (S.geminiModel === "gemini-flash-latest" && !S.m2) { S.geminiModel = DEF.geminiModel; S.m2 = 1; } }
+      if (S.geminiModel === "gemini-flash-latest" && !S.m2) { S.geminiModel = DEF.geminiModel; S.m2 = 1; }
+      if (S.clientId === OLD_GCID) S.clientId = DEF.clientId; }
     const l = await IDB.get("kv", "local"); if (l) L = Object.assign(L, l, { rev: 0, user: Object.assign({ name: "", phone: "", line: "" }, l.user || {}) });
     const ds = await IDB.get("kv", "drafts");
     if (ds && ds.length) for (const x of ds) { const b = await blobGet("draft:" + x.id); if (!b) continue; const sb = await blobGet("draftself:" + x.id);
