@@ -227,6 +227,14 @@ form{display:block;margin-top:6px}
 .contact .avatar,.photos img,#previewImg{cursor:zoom-in}
 .viewer{position:fixed;inset:0;z-index:40;background:#000;touch-action:none;overflow:hidden;animation:dim .2s ease}
 .viewer[hidden]{display:none}
+body.team .owner-only,body:not(.team) .team-only{display:none!important}
+body.fresh #v-me .sec,body.fresh #links,body.fresh #v-me .foot,body.fresh #shareBtn,body.fresh #myCard .hint{display:none!important}
+.kit{display:flex;gap:12px;align-items:center;padding:10px 12px 10px 16px;border-bottom:.5px solid rgba(84,84,88,.6)}
+.kit img{width:52px;height:52px;object-fit:cover;border-radius:8px;background:#000;flex:none}
+.kit .f{flex:1;min-width:0;display:grid;gap:4px}.kit input{width:100%;background:transparent;border:0;color:inherit;font:inherit;font-size:15px;padding:2px 0;outline:none}
+.kit input+input{font-size:13px;color:var(--mute)}
+.tm{display:flex;align-items:center;gap:10px;padding:10px 12px 10px 16px;border-bottom:.5px solid rgba(84,84,88,.6);font-size:15px}
+.tm span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}.tm small{color:var(--mute)}.tm .link-btn{font-size:14px}
 .viewer img{position:absolute;left:0;top:0;transform-origin:0 0;will-change:transform;user-select:none;-webkit-user-select:none;-webkit-user-drag:none;max-width:none}
 .viewer .x{position:absolute;top:calc(12px + env(safe-area-inset-top));right:14px;z-index:2;background:rgba(60,60,64,.75);backdrop-filter:blur(10px)}
 .viewer p{position:absolute;left:0;right:0;bottom:calc(18px + env(safe-area-inset-bottom));text-align:center;color:rgba(255,255,255,.55);font-size:13px;margin:0;transition:opacity .4s;pointer-events:none}
@@ -378,7 +386,14 @@ form{display:block;margin-top:6px}
   <section class="view" id="v-set" data-title="ตั้งค่า">
     <h1 class="large">ตั้งค่า</h1>
     <form id="setForm" novalidate>
-      <div class="sec">ข้อมูลของผม</div>
+      <div class="team-only">
+        <div class="sec">ผู้ใช้เครื่องนี้</div>
+        <div class="group"><button type="button" class="cell" id="whoEdit"><i class="ic" style="background:#0A84FF">👤</i><span id="whoNow">ยังไม่ได้ตั้งชื่อ</span></button></div>
+        <p class="foot">ชื่อนี้ติดไปกับนามบัตรทุกใบที่สแกนจากเครื่องนี้ และเป็นชื่อผู้ส่งในอีเมล แต่ละเครื่องตั้งแยกกัน</p>
+        <div class="sec">โฟลเดอร์ทีม</div>
+        <div class="group" id="teamLinkBox"></div>
+      </div>
+      <div class="sec" id="secMe">ข้อมูลของผม</div>
       <div class="group rows">
         <label><span>ชื่อ (ไทย)</span><input data-k="nameTh"></label>
         <label><span>ชื่อ (อังกฤษ)</span><input data-k="nameEn"></label>
@@ -394,19 +409,35 @@ form{display:block;margin-top:6px}
 
       <div class="sec">หน้านามบัตร</div>
       <div class="group rows">
-        <label class="check"><span>QR LINE ข้างรูปผม</span><input type="checkbox" data-k="showQr"></label>
-        <label class="check"><span>แถว LINE และ Facebook</span><input type="checkbox" data-k="showRows"></label>
-        <label><span>ข้อความใต้ QR</span><input data-k="qrCaption"></label>
-        <div class="row-item thumbset"><img id="setQr" alt="QR LINE ปัจจุบัน"><div><label class="link-btn" for="qrUp">เปลี่ยนรูป QR LINE</label><input id="qrUp" type="file" accept="image/*" hidden><button type="button" class="link-btn" id="qrReset">ใช้ QR เดิม</button></div></div>
+        <label class="check owner-only"><span>QR LINE ข้างรูปผม</span><input type="checkbox" data-k="showQr"></label>
+        <label class="check owner-only"><span>แถว LINE และ Facebook</span><input type="checkbox" data-k="showRows"></label>
+        <label class="owner-only"><span>ข้อความใต้ QR</span><input data-k="qrCaption"></label>
+        <div class="row-item thumbset owner-only"><img id="setQr" alt="QR LINE ปัจจุบัน"><div><label class="link-btn" for="qrUp">เปลี่ยนรูป QR LINE</label><input id="qrUp" type="file" accept="image/*" hidden><button type="button" class="link-btn" id="qrReset">ใช้ QR เดิม</button></div></div>
         <div class="row-item thumbset"><img id="setCard" alt="รูปนามบัตรต้นแบบ"><div><label class="link-btn" for="cardUp">เปลี่ยนรูปนามบัตร</label><input id="cardUp" type="file" accept="image/*" hidden><button type="button" class="link-btn" id="cardReset">ใช้รูปเดิม</button></div></div>
       </div>
-      <div class="sec">รูปนามบัตรที่บันทึกไว้</div>
+      <div class="sec">สิ่งที่แนบไปกับอีเมล</div>
       <div class="group">
+        <div id="kitRows"></div>
+        <label class="cell add" for="kitUp"><i class="ic" style="background:var(--ok)">＋</i><span>เพิ่มโบรชัวร์ (รูปปก)</span></label><input id="kitUp" type="file" accept="image/*" hidden>
+      </div>
+      <div class="group rows" style="margin-top:10px"><label><span>แนบเป็นค่าเริ่มต้น</span><select id="kitDef"></select></label></div>
+      <p class="foot">ใส่รูปปกโบรชัวร์ และลิงก์ไฟล์ PDF (เช่นลิงก์แชร์จาก Google Drive) อีเมลจะแสดงรูปปกพร้อมปุ่มเปิดโบรชัวร์ ไม่แนบไฟล์ใหญ่ เลือกเปลี่ยนได้ในหน้าตรวจอีเมลทุกฉบับ</p>
+
+      <div class="owner-only">
+        <div class="sec">ทีม (ใช้ CardDrop ด้วยบัญชีบริษัท)</div>
+        <div class="group" id="teamRows"></div>
+        <div class="group rows" style="margin-top:10px"><label><span>เพิ่มบัญชี</span><input id="teamAdd" type="email" inputmode="email" placeholder="เช่น marketing@360truck.co"></label></div>
+        <button type="button" class="btn tint" id="teamSetup" style="margin-top:10px">สร้าง/อัปเดตโฟลเดอร์และชีตทีม</button>
+        <p class="foot" id="teamMsg">ระบบสร้างโฟลเดอร์ “CardDrop ทีม” ใน Drive ของคุณ แยกโฟลเดอร์ย่อยต่อบัญชี และชีต “CardDrop – ลีดทีม” แยกแท็บต่อบัญชี แชร์ให้แต่ละบัญชีเฉพาะของตัวเอง แล้วส่งลิงก์เชิญให้ทีมเปิดบนมือถือ</p>
+      </div>
+
+      <div class="sec owner-only">รูปนามบัตรที่บันทึกไว้</div>
+      <div class="group owner-only">
         <button type="button" class="cell" id="bulkCrop"><i class="ic" style="background:var(--lime);color:var(--lime-ink)">⌗</i><span>ตัดขอบและปรับรูปเดิมทั้งหมด</span></button>
         <button type="button" class="cell" id="bulkUndo"><i class="ic" style="background:#8E8E93">↺</i><span>กลับไปใช้รูปต้นฉบับทั้งหมด</span></button>
       </div>
-      <p class="foot" id="bulkMsg">ตัดเฉพาะรูปที่หาขอบเจอ รูปต้นฉบับเก็บไว้ในเครื่อง ย้อนกลับได้ทุกเมื่อ รูปที่แก้จะส่งขึ้น Drive ใหม่และอัปเดตลิงก์ใน Sheet ให้</p>
-      <p class="foot" style="margin-top:14px">ชื่อ เบอร์ อีเมล และ LinkedIn บนนามบัตรเป็นส่วนหนึ่งของรูป ถ้าเปลี่ยนให้อัปโหลดรูปใหม่ ถ้ารูปใหม่วางแบบต่างจากเดิม ให้ปิด QR และแถวที่ระบบเพิ่ม</p>
+      <p class="foot owner-only" id="bulkMsg">ตัดเฉพาะรูปที่หาขอบเจอ รูปต้นฉบับเก็บไว้ในเครื่อง ย้อนกลับได้ทุกเมื่อ รูปที่แก้จะส่งขึ้น Drive ใหม่และอัปเดตลิงก์ใน Sheet ให้</p>
+      <p class="foot owner-only" style="margin-top:14px">ชื่อ เบอร์ อีเมล และ LinkedIn บนนามบัตรเป็นส่วนหนึ่งของรูป ถ้าเปลี่ยนให้อัปโหลดรูปใหม่ ถ้ารูปใหม่วางแบบต่างจากเดิม ให้ปิด QR และแถวที่ระบบเพิ่ม</p>
 
       <div class="sec">ลิงก์ให้คนตรงหน้าสแกน</div>
       <div class="group">
@@ -424,7 +455,7 @@ form{display:block;margin-top:6px}
         <label class="stack"><span>Body (English)</span><textarea data-k="bodyEn" rows="8"></textarea></label>
         <label class="stack"><span>Signature (English)</span><textarea data-k="sigEn" rows="5"></textarea></label>
       </div>
-      <p class="foot">ใช้ได้: {name} ชื่อต้น · {company} บริษัท · {place} ที่ที่เจอ · {signature} ลายเซ็น</p>
+      <p class="foot">ใช้ได้: {name} ชื่อต้น · {company} บริษัท · {place} ที่ที่เจอ · {signature} ลายเซ็น · {kit} สิ่งที่แนบ · {sender} {senderPhone} {senderLine} ผู้ใช้เครื่องนี้ · {account} อีเมลบัญชี</p>
 
       <div class="sec">ข้อความแชท (LINE / WhatsApp)</div>
       <div class="group rows">
@@ -509,6 +540,19 @@ form{display:block;margin-top:6px}
     <p class="foot" style="text-align:center">ลากมุมทั้งสี่ให้ตรงขอบนามบัตร</p>
   </div>
 </div>
+<div class="sheet" id="whoSheet" role="dialog" aria-modal="true" aria-label="ใครใช้เครื่องนี้">
+  <div class="body">
+    <div class="head"><h3>ใครใช้เครื่องนี้</h3></div>
+    <p class="foot" style="margin-top:0">หลายคนใช้บัญชี <b id="whoAcc"></b> ร่วมกันได้ ชื่อนี้จะติดไปกับนามบัตรทุกใบที่สแกนจากเครื่องนี้ และใช้เป็นชื่อผู้ส่งในอีเมล</p>
+    <div class="group rows">
+      <label><span>ชื่อ</span><input id="whoName" placeholder="เช่น แพร ฝ่ายการตลาด" autocomplete="name"></label>
+      <label><span>เบอร์โทร</span><input id="whoPhone" inputmode="tel" placeholder="ไม่ใส่ก็ได้"></label>
+      <label><span>LINE ID</span><input id="whoLine" placeholder="ไม่ใส่ก็ได้"></label>
+    </div>
+    <p class="err" id="whoErr" hidden>ใส่ชื่อก่อน</p>
+    <button type="button" class="btn lime big" id="whoSave">บันทึก</button>
+  </div>
+</div>
 <div class="sheet" id="mailSheet" role="dialog" aria-modal="true" aria-label="ตรวจอีเมลก่อนส่ง">
   <div class="body">
     <div class="head"><button type="button" class="link-btn" id="mLater">ไว้ทีหลัง</button><h3 style="padding:0">ตรวจอีเมล</h3><button type="button" class="send-btn" id="mSend" aria-label="ส่ง">↑</button></div>
@@ -520,7 +564,8 @@ form{display:block;margin-top:6px}
       <textarea id="mBody" rows="12" aria-label="ข้อความ"></textarea>
     </div>
     <div class="sec">ไฟล์แนบ</div>
-    <div class="attach"><div class="att"><img id="mCard" alt=""><span>นามบัตร<br><small>JPG · ในเนื้ออีเมล</small></span></div><div class="att"><i>VCF</i><span>บันทึกรายชื่อ<br><small id="mVcf"></small></span></div></div>
+    <div class="filt" id="mKits"></div>
+    <div class="attach"><div class="att" id="mKitAtt"><img id="mCard" alt=""><span id="mKitName">นามบัตร<br><small>JPG · ในเนื้ออีเมล</small></span></div><div class="att"><i>VCF</i><span>บันทึกรายชื่อ<br><small id="mVcf"></small></span></div></div>
     <details class="mprev"><summary>ดูแบบที่ผู้รับเห็น</summary><div id="mPrev"></div></details>
     <div id="mHist"></div>
     <p class="foot" id="mMsg" style="text-align:center">แก้ได้เลย ระบบเก็บให้อัตโนมัติ</p>
@@ -548,7 +593,7 @@ const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 
 const toast = (m, ms = 3200) => { const t = $("#toast"); t.textContent = m; t.classList.add("on"); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove("on"), ms); };
 const FIELDS = ["name_th","name_en","title","company","email","mobile","phone","line","website","address","place","note"];
 const validEmail = e => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e || "");
-const DEF_CARD = "namecard.jpg", DEF_QR = "line-qr.png", APP_V = "27 พ.ย. 69 · 7", DET_V = 4;
+const DEF_CARD = "namecard.jpg", DEF_QR = "line-qr.png", APP_V = "27 พ.ย. 69 · 8", DET_V = 4;
 
 const DEF = {
   nameTh: "ชัชชน (Sea)", nameEn: "Chuchchon Saenjaibal (Sea)", title: "Chief Executive Officer", company: "360TRUCK & 360TECHX",
@@ -579,9 +624,34 @@ const DEF = {
   ocrProvider: "gemini", geminiKey: "", geminiModel: "gemini-flash-lite-latest", autoScan: true, apiKey: "", model: "claude-sonnet-5-5", cardLink: "", cardLinkKey: ""
 };
 const clone = o => JSON.parse(JSON.stringify(o));
+DEF.mode = "owner"; DEF.kits = []; DEF.kitDefault = "card"; DEF.team = null; DEF.teamLink = null;
+const OWNER = "chuchchon@360truck.co";
+/* a 360TRUCK team account (shared mailbox such as marketing@): company details only, no personal card, its own Sheet */
+function TEAM_DEF(email){
+  const t = clone(DEF);
+  Object.assign(t, {
+    mode: "team", account: email, email, nameTh: "", nameEn: "", title: "", company: "360TRUCK", phone: "",
+    lineId: "", lineUrl: "https://line.me/R/ti/p/@360shipper", facebook: "", linkedin: "",
+    showQr: false, showRows: false, qrCaption: "", qrImg: null, cardImg: null, cardLink: "", cardLinkKey: "",
+    links: DEF.links.filter(l => !/linkedin\.com\/in\//.test(l.url)),
+    subjTh: "ขอบคุณที่แวะมาคุยกับ 360TRUCK ที่{place}",
+    bodyTh: "เรียน คุณ{name}\n\nขอบคุณที่แวะมาพูดคุยกับเราที่{place} เราแนบ{kit}มาให้ในอีเมลนี้ เผื่อเป็นประโยชน์กับ{company}\n\nหากอยากคุยรายละเอียดเรื่องการขนส่ง ตอบกลับอีเมลนี้หรือโทรหาเราได้เลย\n\nขอแสดงความนับถือ\n{signature}\n\nหากไม่ต้องการรับข้อมูลจากเราอีก ตอบกลับอีเมลนี้ได้เลย",
+    sigTh: "{sender}\n360TRUCK\nโทร {senderPhone}\nLINE: {senderLine}\n{account} | www.360truck.co",
+    subjEn: "Thank you for visiting 360TRUCK at {place}",
+    bodyEn: "Dear {name},\n\nThank you for stopping by to talk with us at {place}. Attached is our {kit} in case it is useful for {company}.\n\nIf you would like to discuss your transport needs, just reply to this email or give us a call.\n\nBest regards,\n{signature}\n\nIf you would rather not hear from us again, simply reply to let us know.",
+    sigEn: "{sender}\n360TRUCK\nTel {senderPhone}\nLINE: {senderLine}\n{account} | www.360truck.co",
+    chatTh: "สวัสดีคุณ{name} {sender} จากทีม 360TRUCK ยินดีที่ได้คุยกันที่{place} 🙏\nช่องทางติดต่อ\n📞 {senderPhone}\n💬 LINE OA: @360shipper\n✉️ {account}\n🌐 https://www.360truck.co",
+    chatEn: "Hi {name}, this is {sender} from 360TRUCK. Great to meet you at {place}! 🙏\n📞 {senderPhone}\n💬 LINE OA: @360shipper\n✉️ {account}\n🌐 https://www.360truck.co",
+    sheetId: "", sheetTab: "Namecards", kits: [], kitDefault: "card", team: null, teamLink: null, u: 0
+  });
+  return t;
+}
+const baseFor = st => st && st.mode === "team" ? TEAM_DEF(st.account || "") : clone(DEF);
+const isTeam = () => S.mode === "team";
+const lc = v => String(v || "").trim().toLowerCase();
 /* D = what is kept on this phone and copied to Google Drive; L = this phone only */
 let D = { cards: [], gone: {}, settings: clone(DEF), ts: 0 };
-let L = { drive: {}, dirty: false, imported: false, last: 0, rev: 0 };
+let L = { drive: {}, dirty: false, imported: false, last: 0, rev: 0, me: "", user: { name: "", phone: "", line: "" }, fresh: false };
 let S = D.settings;
 let drafts = [], cur = null, cardJpeg = "";
 
@@ -637,20 +707,30 @@ document.addEventListener("keydown", e => { if (e.key === "Escape") $$(".sheet")
 
 /* ================= Google sign-in ================= */
 const GD = "https://www.googleapis.com/drive/v3", GDU = "https://www.googleapis.com/upload/drive/v3", GDF = "application/vnd.google-apps.folder", ROOT_NAME = "CardDrop App";
-const SCOPES = ["https://www.googleapis.com/auth/drive.file", "https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/gmail.send"].join(" ");
+const SCOPES = ["openid", "email", "https://www.googleapis.com/auth/drive.file", "https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/gmail.send"];
+/* a team phone also needs to write into the folder its owner shared, which drive.file cannot reach */
+const DRIVE_ALL = "https://www.googleapis.com/auth/drive";
+const wantScopes = () => (S.teamLink || pendingInvite() ? SCOPES.concat(DRIVE_ALL) : SCOPES).join(" ");
+function tokScopes(){ try { const t = JSON.parse(sessionStorage.getItem("cdTok") || localStorage.getItem("cdTok") || "null"); return (t && t.sc) || ""; } catch { return ""; } }
+const hasDriveAll = () => tokScopes().split(/\s+/).includes(DRIVE_ALL);
 const appBase = () => location.origin + location.pathname.replace(/index\.html$/, ""); /* this page is its own redirect URI */
 function gcid(){ if (S.clientId) return S.clientId; for (const k of ["tp:gcid", "hkd26:gcid"]) { try { const v = JSON.parse(localStorage.getItem(k) || '""'); if (v) return String(v); } catch {} } return DEF.clientId; }
 function token(){ try { const t = JSON.parse(sessionStorage.getItem("cdTok") || localStorage.getItem("cdTok") || "null"); if (t && t.exp > Date.now() + 90000) return t.tok; } catch {} return ""; }
 async function signIn(){
   stash(); await saveDrafts(); await persist();
   const st = "card~" + uid(); try { sessionStorage.setItem("cdState", st); localStorage.setItem("cdState", st); } catch {}
-  location.href = "https://accounts.google.com/o/oauth2/v2/auth?" + new URLSearchParams({ client_id: gcid(), redirect_uri: appBase(), response_type: "token", scope: SCOPES, state: st, include_granted_scopes: "true", login_hint: S.account || "" });
+  location.href = "https://accounts.google.com/o/oauth2/v2/auth?" + new URLSearchParams({ client_id: gcid(), redirect_uri: appBase(), response_type: "token", scope: wantScopes(), state: st, include_granted_scopes: "true", login_hint: (L.fresh ? (pendingInvite() || {}).e : S.account) || "" });
 }
 let authErr = "";
+/* invite link from the owner: ?team=<base64 json> — kept until this phone is signed in to the right account */
+(function(){ try { const q = new URLSearchParams(location.search), t = q.get("team"); if (!t) return;
+  const j = JSON.parse(decodeURIComponent(escape(atob(t.replace(/-/g, "+").replace(/_/g, "/"))))); if (j && j.f && j.s) localStorage.setItem("cdInvite", JSON.stringify(j));
+  history.replaceState(null, "", location.pathname); } catch {} })();
+function pendingInvite(){ try { return JSON.parse(localStorage.getItem("cdInvite") || "null"); } catch { return null; } }
 (function(){ try { const h = location.hash || ""; if (!/(access_token|error)=/.test(h)) return; const p = new URLSearchParams(h.slice(1)); history.replaceState(null, "", location.pathname);
   const want = sessionStorage.getItem("cdState") || localStorage.getItem("cdState"); if (want !== p.get("state")) return;
   sessionStorage.removeItem("cdState"); localStorage.removeItem("cdState");
-  if (p.get("access_token")) { const v = JSON.stringify({ tok: p.get("access_token"), exp: Date.now() + (+p.get("expires_in") || 3600) * 1000 }); sessionStorage.setItem("cdTok", v); localStorage.setItem("cdTok", v); }
+  if (p.get("access_token")) { const v = JSON.stringify({ tok: p.get("access_token"), exp: Date.now() + (+p.get("expires_in") || 3600) * 1000, sc: p.get("scope") || "" }); sessionStorage.setItem("cdTok", v); localStorage.setItem("cdTok", v); }
   else authErr = "เข้าสู่ระบบ Google ไม่สำเร็จ (" + (p.get("error") || "") + ")";
 } catch {} })();
 const dropToken = () => { try { sessionStorage.removeItem("cdTok"); localStorage.removeItem("cdTok"); } catch {} };
@@ -706,40 +786,65 @@ function linkify(t){
 }
 const mailIsTh = body => /[\u0E00-\u0E7F]/.test(body);
 /* the HTML part: the message, then the card itself and one-tap links under it */
-function mailHtml(body, imgSrc){
-  const th = mailIsTh(body), L = (u, t) => u ? `<a href="${esc(u)}" style="color:#0a66c2;text-decoration:none">${esc(t)}</a>` : "";
-  const links = [L(S.lineUrl, th ? "เพิ่มเพื่อน LINE" : "Add me on LINE"), L(S.linkedin, "LinkedIn"), L(S.facebook, "Facebook"), L("https://www.360truck.co", "360truck.co")].filter(Boolean).join(' &nbsp;·&nbsp; ');
-  return `<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#222">${linkify(body)}</div>`
-    + `<div style="margin-top:20px"><a href="${esc(S.lineUrl || S.linkedin || "#")}"><img src="${imgSrc}" width="280" alt="${esc((th ? "นามบัตร " : "Business card – ") + S.nameEn)}" style="width:280px;max-width:100%;height:auto;border:0;border-radius:14px;display:block"></a></div>`
-    + `<div style="font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#666;margin-top:10px">${links}</div>`
-    + `<div style="font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#999;margin-top:6px">${th ? "แนบไฟล์รายชื่อ (.vcf) มาด้วย แตะเพื่อบันทึกลงมือถือได้ทันทีครับ" : "My contact file (.vcf) is attached — tap it to save me to your phone."}</div>`;
+/* ================= handouts: my card, or a brochure the team added ================= */
+const hasCard = () => !isTeam() || !!S.cardImg;
+function kitList(){
+  const k = (S.kits || []).filter(x => x.img).map(x => ({ ...x, kind: "brochure" }));
+  return (hasCard() ? [{ id: "card", name: isTeam() ? "นามบัตร" : "นามบัตรของผม", kind: "card", link: "" }] : []).concat(k);
 }
-/* contact file: one tap saves Sea to the other person's phone */
+function kitOf(id){ const l = kitList(); return l.find(k => k.id === id) || l.find(k => k.id === S.kitDefault) || l[0] || null; }
+/* JPEG of a handout as a data URL (cards are drawn; brochures come from the uploaded picture) */
+async function kitJpeg(kit){
+  if (!kit) return "";
+  if (kit.id === "card") { if (!cardJpeg) await renderCard(); return cardJpeg; }
+  const u = await assetUrl("set:kit:" + kit.id, kit.img); if (!u) return "";
+  const im = await loadImg(u), k = Math.min(1, 1400 / Math.max(im.naturalWidth, im.naturalHeight)), c = document.createElement("canvas");
+  c.width = Math.round(im.naturalWidth * k); c.height = Math.round(im.naturalHeight * k); c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
+  return c.toDataURL("image/jpeg", .88);
+}
+const fileBase = () => (String(isTeam() ? (L.user.name || S.company) : (S.nameEn || S.company)).replace(/\s*\(.*?\)\s*/g, " ").trim().replace(/[^\w\u0E00-\u0E7F]+/g, "_") || "card");
+const kitFile = kit => kit && kit.id !== "card" ? String(kit.name || "brochure").replace(/[^\w\u0E00-\u0E7F]+/g, "_") + ".jpg" : (isTeam() ? "360TRUCK_" + fileBase() : "Chuchchon_360TRUCK") + "_Namecard.jpg";
+/* the HTML part: the message, the handout picture, and one-tap links under it */
+function mailHtml(body, imgSrc, kit){
+  const th = mailIsTh(body), A = (u, t) => u ? `<a href="${esc(u)}" style="color:#0a66c2;text-decoration:none">${esc(t)}</a>` : "";
+  const kitLink = kit && safeUrl(kit.link) ? kit.link : "";
+  const links = [kitLink && A(kitLink, kit.linkLabel || (th ? "เปิดโบรชัวร์" : "Open brochure")), A(S.lineUrl, isTeam() ? "LINE OA" : (th ? "เพิ่มเพื่อน LINE" : "Add me on LINE")), A(S.linkedin, "LinkedIn"), A(S.facebook, "Facebook"), A("https://www.360truck.co", "360truck.co")].filter(Boolean).join(' &nbsp;·&nbsp; ');
+  const alt = kit ? (kit.id === "card" ? (th ? "นามบัตร " : "Business card – ") + (isTeam() ? S.company : S.nameEn) : kit.name) : "";
+  return `<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#222">${linkify(body)}</div>`
+    + (imgSrc ? `<div style="margin-top:20px"><a href="${esc(kitLink || S.lineUrl || S.linkedin || "https://www.360truck.co")}"><img src="${imgSrc}" width="${kit && kit.id !== "card" ? 360 : 280}" alt="${esc(alt)}" style="width:${kit && kit.id !== "card" ? 360 : 280}px;max-width:100%;height:auto;border:0;border-radius:14px;display:block"></a></div>` : "")
+    + (kitLink ? `<div style="margin-top:12px"><a href="${esc(kitLink)}" style="display:inline-block;background:#d7e217;color:#141500;font-family:Arial,Helvetica,sans-serif;font-weight:bold;font-size:14px;text-decoration:none;padding:10px 18px;border-radius:20px">${esc(kit.linkLabel || (th ? "เปิดโบรชัวร์" : "Open brochure"))}</a></div>` : "")
+    + `<div style="font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#666;margin-top:10px">${links}</div>`
+    + `<div style="font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#999;margin-top:6px">${th ? "แนบไฟล์รายชื่อ (.vcf) มาด้วย แตะเพื่อบันทึกลงมือถือได้ทันที" : "A contact file (.vcf) is attached — tap it to save us to your phone."}</div>`;
+}
+/* contact file of whoever is sending */
 function vcard(){
   const e = v => String(v || "").replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/([,;])/g, "\\$1");
-  const full = String(S.nameEn || "").replace(/\s*\(.*?\)\s*/g, " ").trim(), nick = (String(S.nameEn || "").match(/\(([^)]+)\)/) || [])[1] || "";
+  const team = isTeam(), m = me();
+  const display = team ? [m.name, S.company].filter(Boolean).join(" · ") : S.nameEn;
+  const full = String(team ? m.name : S.nameEn || "").replace(/\s*\(.*?\)\s*/g, " ").trim(), nick = (String(team ? "" : S.nameEn || "").match(/\(([^)]+)\)/) || [])[1] || "";
   const parts = full.split(/\s+/), given = parts[0] || "", family = parts.slice(1).join(" ");
-  const tel = String(S.phone || "").replace(/[^\d+]/g, "");
-  const L = ["BEGIN:VCARD", "VERSION:3.0", `N:${e(family)};${e(given)};;;`, `FN:${e(S.nameEn)}`, nick && `NICKNAME:${e(nick)}`,
-    S.company && `ORG:${e(S.company)}`, S.title && `TITLE:${e(S.title)}`, tel && `TEL;TYPE=CELL,VOICE:${tel}`, S.email && `EMAIL;TYPE=WORK,INTERNET:${S.email}`,
+  const tel = String(m.phone || "").replace(/[^\d+]/g, ""), line = m.line;
+  const out = ["BEGIN:VCARD", "VERSION:3.0", `N:${e(family)};${e(given)};;;`, `FN:${e(display || S.company)}`, nick && `NICKNAME:${e(nick)}`,
+    S.company && `ORG:${e(S.company)}`, !team && S.title && `TITLE:${e(S.title)}`, tel && `TEL;TYPE=CELL,VOICE:${tel}`, (S.account || S.email) && `EMAIL;TYPE=WORK,INTERNET:${team ? S.account : S.email}`,
     "URL;TYPE=WORK:https://www.360truck.co", S.linkedin && `X-SOCIALPROFILE;TYPE=linkedin:${S.linkedin}`, S.facebook && `X-SOCIALPROFILE;TYPE=facebook:${S.facebook}`,
-    S.lineUrl && `X-SOCIALPROFILE;TYPE=line:${S.lineUrl}`, `NOTE:${e([S.lineId && "LINE: " + S.lineId, S.nameTh].filter(Boolean).join("\n"))}`, "END:VCARD"].filter(Boolean);
-  return L.join("\r\n") + "\r\n";
+    S.lineUrl && `X-SOCIALPROFILE;TYPE=line:${S.lineUrl}`, `NOTE:${e([line && "LINE: " + line, !team && S.nameTh].filter(Boolean).join("\n"))}`, "END:VCARD"].filter(Boolean);
+  return out.join("\r\n") + "\r\n";
 }
-const vcfName = () => (String(S.nameEn || "contact").replace(/\s*\(.*?\)\s*/g, " ").trim().replace(/[^\w]+/g, "_") || "contact") + ".vcf";
-async function sendMail(to, subject, body){
-  if (!cardJpeg) await renderCard();
-  const mix = "m" + uid(), rel = "r" + uid(), alt = "a" + uid(), card = cardJpeg.split(",")[1], cid = "card." + uid() + "@carddrop";
+const vcfName = () => fileBase() + ".vcf";
+async function sendMail(to, subject, body, kitId){
+  const kit = kitOf(kitId), jpg = await kitJpeg(kit), cid = "kit." + uid() + "@carddrop", fname = kitFile(kit);
+  if (kit && safeUrl(kit.link) && !body.includes(kit.link)) body += `\n\n${kit.linkLabel || (mailIsTh(body) ? "เปิดโบรชัวร์" : "Open brochure")}: ${kit.link}`;
+  const mix = "m" + uid(), rel = "r" + uid(), alt = "a" + uid();
   const mime = [
     `To: ${to}`, `Subject: =?UTF-8?B?${utf8b64(subject)}?=`, "MIME-Version: 1.0", `Content-Type: multipart/mixed; boundary="${mix}"`, "",
     `--${mix}`, `Content-Type: multipart/related; boundary="${rel}"`, "",
     `--${rel}`, `Content-Type: multipart/alternative; boundary="${alt}"`, "",
     `--${alt}`, "Content-Type: text/plain; charset=UTF-8", "Content-Transfer-Encoding: base64", "", wrap76(utf8b64(body)),
-    `--${alt}`, "Content-Type: text/html; charset=UTF-8", "Content-Transfer-Encoding: base64", "", wrap76(utf8b64(mailHtml(body, "cid:" + cid))),
+    `--${alt}`, "Content-Type: text/html; charset=UTF-8", "Content-Transfer-Encoding: base64", "", wrap76(utf8b64(mailHtml(body, jpg ? "cid:" + cid : "", kit))),
     `--${alt}--`, "",
-    `--${rel}`, 'Content-Type: image/jpeg; name="Chuchchon_360TRUCK_Namecard.jpg"', 'Content-Disposition: inline; filename="Chuchchon_360TRUCK_Namecard.jpg"', `Content-ID: <${cid}>`, "Content-Transfer-Encoding: base64", "", wrap76(card),
+    ...(jpg ? [`--${rel}`, `Content-Type: image/jpeg; name="=?UTF-8?B?${utf8b64(fname)}?="`, `Content-Disposition: inline; filename="=?UTF-8?B?${utf8b64(fname)}?="`, `Content-ID: <${cid}>`, "Content-Transfer-Encoding: base64", "", wrap76(jpg.split(",")[1])] : []),
     `--${rel}--`, "",
-    `--${mix}`, `Content-Type: text/vcard; charset=UTF-8; name="${vcfName()}"`, `Content-Disposition: attachment; filename="${vcfName()}"`, "Content-Transfer-Encoding: base64", "", wrap76(utf8b64(vcard())),
+    `--${mix}`, `Content-Type: text/vcard; charset=UTF-8; name="=?UTF-8?B?${utf8b64(vcfName())}?="`, `Content-Disposition: attachment; filename="=?UTF-8?B?${utf8b64(vcfName())}?="`, "Content-Transfer-Encoding: base64", "", wrap76(utf8b64(vcard())),
     `--${mix}--`, ""
   ].join("\r\n");
   return g("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", { method: "POST", json: { raw: b64u(mime) } });
@@ -750,10 +855,24 @@ const MAILTXT = { sent: "ส่งแล้ว", failed: "ส่งไม่ส�
 const fmtDT = t => { const d = new Date(t), p = n => String(n).padStart(2, "0"); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`; };
 const tabRef = () => "'" + (S.sheetTab || "Namecards").replace(/'/g, "''") + "'";
 const SH = id => `https://sheets.googleapis.com/v4/spreadsheets/${enc(S.sheetId)}/values/`;
+const HEAD = ["วันที่", "ชื่อ (ไทย)", "ชื่อ (อังกฤษ)", "ตำแหน่ง", "บริษัท", "อีเมล", "มือถือ", "โทรศัพท์", "LINE", "เว็บไซต์", "ที่อยู่", "เจอที่", "ละติจูด", "ลองจิจูด", "แผนที่", "บันทึก", "รูปนามบัตร", "เซลฟี่", "อีเมลยินดีที่ได้รู้จัก", "ID", "เก็บโดย"];
+const qTab = t => "'" + String(t || "Namecards").replace(/'/g, "''") + "'";
+const SV = sid => `https://sheets.googleapis.com/v4/spreadsheets/${enc(sid)}/values/`;
+async function idRows(sid, tab){ const j = await g(SV(sid) + enc(qTab(tab) + "!T:T")); const m = new Map(); (j.values || []).forEach((v, i) => { if (v && v[0]) m.set(v[0], i + 1); }); return m; }
+async function putRow(sid, tab, ids, id, row){
+  const last = String.fromCharCode(64 + row.length), r = ids.get(id);
+  if (r) { await g(SV(sid) + enc(`${qTab(tab)}!A${r}:${last}${r}`) + "?valueInputOption=USER_ENTERED", { method: "PUT", json: { values: [row] } }); return r; }
+  const j = await g(SV(sid) + enc(`${qTab(tab)}!A1`) + ":append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS", { method: "POST", json: { values: [row] } });
+  const m = String(j && j.updates && j.updates.updatedRange || "").match(/(\d+)(?::[A-Z]+\d+)?$/); if (m) ids.set(id, +m[1]); return m ? +m[1] : 0;
+}
+const newSheet = (title, tabs) => g("https://sheets.googleapis.com/v4/spreadsheets", { method: "POST", json: { properties: { title }, sheets: tabs.map(t => ({ properties: { title: t } })) } });
+async function moveInto(id, folder){ const m = await g(`${GD}/files/${id}?fields=parents`); await g(`${GD}/files/${id}?addParents=${folder}&removeParents=${(m.parents || []).join(",")}&fields=id`, { method: "PATCH", json: {} }); }
+/* a team account's row also says who on the team collected the card */
+function teamRowOf(c){ const r = sheetRowOf(c).slice(0, 20); const t = c.tm || {}; r[16] = (t.photo && t.photo.url) || r[16]; r[17] = (t.selfie && t.selfie.url) || r[17]; r[20] = c.by || ""; return r; }
 function sheetRowOf(c){
   const map = c.lat != null ? "https://www.google.com/maps?q=" + c.lat + "," + c.lng : "";
   return [fmtDT(c.createdAt), c.name_th || "", c.name_en || "", c.title || "", c.company || "", c.email || "", c.mobile || "", c.phone || "", c.line || "", c.website || "", c.address || "", c.place || "",
-    c.lat ?? "", c.lng ?? "", map, c.note || "", (c.photo && c.photo.url) || "", (c.selfie && c.selfie.url) || "", MAILTXT[c.mail && c.mail.status] || "", c.id]
+    c.lat ?? "", c.lng ?? "", map, c.note || "", (c.photo && c.photo.url) || "", (c.selfie && c.selfie.url) || "", MAILTXT[c.mail && c.mail.status] || "", c.id].concat(isTeam() ? [c.by || ""] : [])
     .map(v => typeof v === "string" && /^[=+\-@]/.test(v) ? "'" + v : v);
 }
 async function sheetIds(){
@@ -790,6 +909,96 @@ function merge(R){
 }
 function pending(){ let n = 0; D.cards.forEach(c => { if (c.mail && c.mail.status === "queued") n++; else if ((c.photo && c.photo.local && !c.photo.d) || (c.selfie && c.selfie.local && !c.selfie.d)) n++; else if (S.sheetOn && c.sheetDirty) n++; }); return n; }
 let syncT; const syncSoon = ms => { clearTimeout(syncT); syncT = setTimeout(sync, ms == null ? 1500 : ms); };
+async function pushAssets(F){
+  let ch = false;
+  const up = async (key, name) => {
+    const b = await blobGet(key); if (!b) return null;
+    if (!F.kits || !(await gdAlive(F.kits))) { F.kits = (await gdFind("ชุดแจก", F.root, true) || await gdMkdir("ชุดแจก", F.root)).id; persistLocal(); }
+    SY.msg = "กำลังเก็บรูป " + name + " ลง Drive…"; paintCloud();
+    const f = await gdUpload(b, name, F.kits, b.type || "image/jpeg"); L.assets = { ...(L.assets || {}), [key]: "d:" + f.id }; return "d:" + f.id;
+  };
+  if (S.cardImg === "local") { const r = await up("set:card", "นามบัตร.jpg"); if (r) { S.cardImg = r; ch = true; } }
+  if (S.qrImg === "local") { const r = await up("set:qr", "QR LINE.jpg"); if (r) { S.qrImg = r; ch = true; } }
+  for (const k of S.kits || []) if (k.img === "local") { const r = await up("set:kit:" + k.id, clean(k.name || "โบรชัวร์") + ".jpg"); if (r) { k.img = r; ch = true; } }
+  if (ch) { S.u = Date.now(); await persist(); }
+  return ch;
+}
+/* ================= team (owner side): folders + Sheet in the owner's Drive, invite links ================= */
+const b64url = o => btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+const inviteOf = m => S.team && S.team.sheet && m.folder ? appBase() + "?team=" + b64url({ o: S.account || OWNER, e: m.email, f: m.folder, s: S.team.sheet, t: m.label }) : "";
+const inviteMsg = m => `เปิดลิงก์นี้บนมือถือที่ใช้ CardDrop ด้วยบัญชี ${m.email} (ทุกเครื่องที่ใช้บัญชีนี้)\n${inviteOf(m)}`;
+function drawTeam(){
+  const T = S.team || { members: [] }, box = $("#teamRows");
+  box.innerHTML = T.members.length ? T.members.map((m, i) => `<div class="tm"><span>${esc(m.email)}<br><small>${m.shared ? "แชร์แล้ว · " + esc(m.label) : "ยังไม่ได้ตั้งค่า — กดปุ่มด้านล่าง"}</small></span>${inviteOf(m) ? `<button type="button" class="link-btn" data-tcopy="${i}">คัดลอกลิงก์</button><a class="link-btn" target="_blank" rel="noopener" href="https://line.me/R/share?text=${enc(inviteMsg(m))}">LINE</a>` : ""}<button type="button" class="x" data-trm="${i}" aria-label="ลบ">✕</button></div>`).join("")
+    : '<div class="tm"><small>ยังไม่มีบัญชีทีม เพิ่มด้านล่าง</small></div>';
+  if (T.root) box.insertAdjacentHTML("beforeend", `<a class="cell" href="https://drive.google.com/drive/folders/${esc(T.root)}" target="_blank" rel="noopener"><i class="ic" style="background:#1a73e8">D</i><span>เปิดโฟลเดอร์ CardDrop ทีม</span></a>${T.sheet ? `<a class="cell" href="https://docs.google.com/spreadsheets/d/${esc(T.sheet)}/edit" target="_blank" rel="noopener"><i class="ic" style="background:#188038">S</i><span>เปิดชีตลีดทีม</span></a>` : ""}`);
+}
+async function saveTeam(T){ S.team = T; S.u = Date.now(); await persist(); drawTeam(); syncSoon(); }
+$("#teamAdd").addEventListener("change", e => {
+  const v = lc(e.target.value); if (!v) return; if (!validEmail(v)) { $("#teamMsg").textContent = "อีเมลไม่ถูกต้อง"; return; }
+  const T = clone(S.team || { members: [] }); if (T.members.some(m => m.email === v)) return;
+  let label = v.split("@")[0], n = 2; while (T.members.some(m => m.label === label)) label = v.split("@")[0] + n++;
+  T.members.push({ email: v, label }); e.target.value = ""; saveTeam(T); $("#teamMsg").textContent = "เพิ่ม " + v + " แล้ว กด “สร้าง/อัปเดตโฟลเดอร์และชีตทีม”";
+});
+$("#teamRows").addEventListener("click", async e => {
+  const c = e.target.closest("[data-tcopy]"), r = e.target.closest("[data-trm]"), T = clone(S.team || { members: [] });
+  if (c) { const m = T.members[+c.dataset.tcopy]; try { await navigator.clipboard.writeText(inviteMsg(m)); $("#teamMsg").textContent = "คัดลอกลิงก์เชิญของ " + m.email + " แล้ว"; } catch { prompt("คัดลอกลิงก์นี้", inviteOf(m)); } }
+  if (r) { if (r.dataset.sure !== "1") { r.dataset.sure = "1"; r.textContent = "ลบ?"; return; } const m = T.members.splice(+r.dataset.trm, 1)[0]; await saveTeam(T); $("#teamMsg").textContent = `เอา ${m.email} ออกจากรายการแล้ว — โฟลเดอร์และชีตที่แชร์ไว้ยังอยู่ ยกเลิกการแชร์ได้ใน Drive`; }
+});
+$("#teamSetup").addEventListener("click", async () => {
+  const msg = $("#teamMsg"), T = clone(S.team || { members: [] });
+  if (!T.members.length) { msg.textContent = "เพิ่มอีเมลบัญชีทีมก่อน"; return; }
+  if (!token()) { msg.textContent = "เข้าสู่ระบบ Google ก่อน (ปุ่ม ☁ มุมบน)"; return; }
+  try {
+    msg.textContent = "กำลังสร้างโฟลเดอร์ทีม…";
+    if (!T.root || !(await gdAlive(T.root))) T.root = (await gdFind("CardDrop ทีม", "root", true) || await gdMkdir("CardDrop ทีม", "root")).id;
+    if (!T.sheet || !(await gdAlive(T.sheet))) { const j = await newSheet("CardDrop – ลีดทีม", T.members.map(m => m.label)); T.sheet = j.spreadsheetId; await moveInto(T.sheet, T.root); T.members.forEach(m => m.shared = false); }
+    const tabs = ((await g(`https://sheets.googleapis.com/v4/spreadsheets/${T.sheet}?fields=sheets.properties.title`)).sheets || []).map(x => x.properties.title);
+    for (const m of T.members) {
+      msg.textContent = "กำลังตั้งค่า " + m.email + "…";
+      if (!m.folder || !(await gdAlive(m.folder))) { m.folder = (await gdFind(m.label, T.root, true) || await gdMkdir(m.label, T.root)).id; m.shared = false; }
+      if (!tabs.includes(m.label)) { await g(`https://sheets.googleapis.com/v4/spreadsheets/${T.sheet}:batchUpdate`, { method: "POST", json: { requests: [{ addSheet: { properties: { title: m.label } } }] } }); tabs.push(m.label); }
+      await g(SV(T.sheet) + enc(qTab(m.label) + "!A1:U1") + "?valueInputOption=RAW", { method: "PUT", json: { values: [HEAD] } });
+      if (!m.shared) { for (const id of [m.folder, T.sheet]) await g(`${GD}/files/${id}/permissions?sendNotificationEmail=false`, { method: "POST", json: { role: "writer", type: "user", emailAddress: m.email } }); m.shared = true; }
+    }
+    await saveTeam(T); msg.textContent = "พร้อมแล้ว — กด “คัดลอกลิงก์” หรือ LINE ส่งลิงก์เชิญให้แต่ละบัญชีเปิดบนมือถือของทีม";
+  } catch (e) { await saveTeam(T); msg.textContent = "ไม่สำเร็จ: " + e.message; }
+});
+/* team phone: is it connected to the owner's folder? */
+function drawTeamLink(){
+  const T = S.teamLink, box = $("#teamLinkBox");
+  if (!T) { box.innerHTML = `<div class="tm"><small>ยังไม่ได้เชื่อม — เปิดลิงก์เชิญที่ได้รับจากเจ้าของ (ชัชชน) บนเครื่องนี้ นามบัตรที่สแกนจะส่งสำเนาไปเก็บที่ Drive ของเจ้าของด้วย</small></div>`; return; }
+  box.innerHTML = `<div class="tm"><span>เชื่อมกับ Drive ของ ${esc(T.o)}<br><small>โฟลเดอร์ ${esc(T.t)} · ชีตลีดทีม แท็บ ${esc(T.t)}${hasDriveAll() || !token() ? "" : " · ต้องให้สิทธิ์เพิ่ม"}</small></span></div>`
+    + (token() && !hasDriveAll() ? `<button type="button" class="cell" id="teamGrant"><i class="ic" style="background:var(--lime);color:var(--lime-ink)">↻</i><span>ให้สิทธิ์เขียนโฟลเดอร์ทีม (เข้าสู่ระบบอีกครั้ง)</span></button>` : "");
+  const b = $("#teamGrant"); if (b) b.addEventListener("click", signIn);
+}
+/* which Google account the token belongs to */
+async function whoami(){
+  if (L.me && L.meTok === token()) return L.me;
+  if (!/(^|\s)(email|https:\/\/www\.googleapis\.com\/auth\/userinfo\.email)(\s|$)/.test(tokScopes())) return L.me || "";   /* signed in before this version: ask next time */
+  try { const j = await g("https://openidconnect.googleapis.com/v1/userinfo"); L.me = lc(j && j.email); L.meTok = token(); persistLocal(); } catch (e) { if (e.code === "auth") throw e; }
+  return L.me;
+}
+/* decide what this phone is for: the owner's own CardDrop, or a team account; never mix two accounts' data */
+async function settleAccount(){
+  const me = await whoami(); if (!me) return true;
+  const mine = lc(S.account), empty = !D.cards.length && !(S.u > 0);
+  if (L.fresh || (empty && mine !== me)) {
+    D.settings = me === OWNER ? clone(DEF) : TEAM_DEF(me); S = D.settings; L.fresh = false; L.drive = {}; L.imported = me !== OWNER;
+    await persist(); applySettings(); renderList();
+  } else if (mine && mine !== me) {
+    SY.err = `เครื่องนี้เก็บข้อมูลของ ${S.account} แต่เข้าสู่ระบบเป็น ${me} — ออกจากระบบแล้วเข้าด้วย ${S.account} หรือแตะ “ใช้บัญชีนี้แทน” ด้านล่าง`;
+    SY.wrong = me; return false;
+  }
+  SY.wrong = "";
+  const inv = pendingInvite();
+  if (inv && isTeam()) {
+    if (inv.e && lc(inv.e) !== me) SY.err = `ลิงก์ทีมนี้สำหรับ ${inv.e} แต่เข้าสู่ระบบเป็น ${me}`;
+    else { S.teamLink = { o: inv.o, f: inv.f, s: inv.s, t: inv.t || "ทีม" }; S.u = Date.now(); localStorage.removeItem("cdInvite"); await persist(); applySettings(); toast("เชื่อมกับโฟลเดอร์ทีมแล้ว", 4000); }
+  }
+  if (isTeam() && !L.user.name) openWho();
+  return true;
+}
 async function sync(){
   if (SY.busy) { SY.again = true; return; }
   if (!token()) { paintCloud(); return; }
@@ -798,10 +1007,20 @@ async function sync(){
   let touched = false;
   try {
     SY.msg = "กำลังเชื่อม Google Drive…"; paintCloud();
+    if (!(await settleAccount())) return;
     await ensureFolders(); const F = L.drive;
     if (F.data) { const r = await g(`${GD}/files/${F.data}?alt=media`, { raw: true, ok404: true });
       if (r) { let R = null; try { R = JSON.parse(await r.text()); } catch {} if (R && merge(R)) { touched = true; applySettings(); renderList(); } } else { F.data = null; L.dirty = true; } }
     if (S.sheetOn && S.sheetId && !L.imported) { SY.msg = "กำลังดึงรายชื่อเดิมจาก Sheet…"; paintCloud(); const n = await importSheet(); L.imported = true; persistLocal(); if (n) { touched = true; renderList(); } }
+    /* pictures from Settings (card, QR, brochures): up to this account's Drive so every phone on the account gets them */
+    if (await pushAssets(F)) touched = true;
+    /* a team account gets its own Sheet the first time */
+    if (S.sheetOn && !S.sheetId && isTeam()) {
+      SY.msg = "กำลังสร้าง Google Sheet ของบัญชีนี้…"; paintCloud();
+      const j = await newSheet("CardDrop – รายชื่อ (" + S.account + ")", [S.sheetTab || "Namecards"]); await moveInto(j.spreadsheetId, F.root);
+      await g(SV(j.spreadsheetId) + enc(qTab(S.sheetTab) + "!A1:U1") + "?valueInputOption=RAW", { method: "PUT", json: { values: [HEAD] } });
+      S.sheetId = j.spreadsheetId; S.u = Date.now(); L.imported = true; touched = true; await persist(); applySettings();
+    }
     /* photos */
     if (S.driveOn) for (const c of D.cards) for (const kind of ["photo", "selfie"]) {
       const p = c[kind]; if (!p || !p.local || p.d) continue;
@@ -821,9 +1040,8 @@ async function sync(){
     for (const c of D.cards) {
       if (!c.mail || c.mail.status !== "queued") continue;
       SY.msg = "กำลังส่งอีเมลถึง " + (c.mail.to || c.email); paintCloud();
-      await renderCard();
       const to = c.mail.to || c.email; c.mailLog = c.mailLog || [];
-      try { await sendMail(to, c.mail.subject, c.mail.body); const at = Date.now(); c.mail = { ...c.mail, status: "sent", at, to, err: "" }; c.mailLog.push({ at, to, subject: c.mail.subject, ok: true }); toast("ส่งอีเมลถึง " + to + " แล้ว"); }
+      try { await sendMail(to, c.mail.subject, c.mail.body, c.mail.kit); const at = Date.now(); c.mail = { ...c.mail, status: "sent", at, to, err: "" }; c.mailLog.push({ at, to, subject: c.mail.subject, ok: true }); toast("ส่งอีเมลถึง " + to + " แล้ว"); }
       catch (e) { if (e.code === "auth") throw e; c.mail = { ...c.mail, status: "failed", err: e.message }; c.mailLog.push({ at: Date.now(), to, subject: c.mail.subject, ok: false, err: String(e.message || "") }); toast("ส่งอีเมลไม่สำเร็จ: " + e.message, 7000); }
       c.u = Date.now(); c.sheetDirty = true; touched = true; await persist(); renderList();
     }
@@ -835,13 +1053,35 @@ async function sync(){
         const ids = await sheetIds();
         for (const c of todo.slice().sort((a, b) => a.createdAt - b.createdAt)) {
           const row = ids.get(c.id) || 0;
-          if (row) await g(SH() + enc(`${tabRef()}!A${row}:T${row}`) + "?valueInputOption=USER_ENTERED", { method: "PUT", json: { values: [sheetRowOf(c)] } });
+          if (row) await g(SH() + enc(`${tabRef()}!A${row}:${isTeam() ? "U" : "T"}${row}`) + "?valueInputOption=USER_ENTERED", { method: "PUT", json: { values: [sheetRowOf(c)] } });
           else { const j = await g(SH() + enc(`${tabRef()}!A1`) + ":append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS", { method: "POST", json: { values: [sheetRowOf(c)] } });
             const m = String(j && j.updates && j.updates.updatedRange || "").match(/(\d+)(?::[A-Z]+\d+)?$/); c.sheetRow = m ? +m[1] : 0; if (c.sheetRow) ids.set(c.id, c.sheetRow); }
           if (row) c.sheetRow = row; c.sheetDirty = false; touched = true;
         }
         for (const id of goneRows.slice()) { const row = ids.get(id); if (row) await g(SH() + enc(`${tabRef()}!S${row}`) + "?valueInputOption=RAW", { method: "PUT", json: { values: [["ลบจากแอปแล้ว"]] } }); L.goneRows = (L.goneRows || []).filter(x => x !== id); }
         await persist();
+      }
+    }
+    /* team phones: a copy of every card goes into the owner's Drive (own folder) and the team Sheet */
+    if (isTeam() && S.teamLink) {
+      if (!hasDriveAll()) SY.need = "team";
+      else {
+        SY.need = ""; const T = S.teamLink;
+        for (const c of D.cards) for (const kind of ["photo", "selfie"]) {
+          const p = c[kind]; if (!p || !p.d) continue; c.tm = c.tm || {}; const cur = c.tm[kind], nm = photoName(c, kind);
+          if (!cur || cur.src !== p.d) {
+            SY.msg = "กำลังส่งสำเนาเข้าโฟลเดอร์ทีม…"; paintCloud();
+            const f = await g(`${GD}/files/${p.d}/copy?fields=id,webViewLink`, { method: "POST", json: { name: nm, parents: [T.f] } });
+            c.tm[kind] = { d: f.id, n: nm, src: p.d, url: safeUrl(f.webViewLink) || `https://drive.google.com/file/d/${f.id}/view` }; touched = true;
+          } else if (cur.n !== nm) { try { await g(`${GD}/files/${cur.d}?fields=id`, { method: "PATCH", json: { name: nm } }); } catch (e) { if (e.code === "auth") throw e; } cur.n = nm; touched = true; }
+        }
+        const todo = D.cards.filter(c => JSON.stringify(teamRowOf(c)) !== c.tmH), gone = L.goneTeam || [];
+        if (todo.length || gone.length) {
+          SY.msg = "กำลังลงชีตทีม…"; paintCloud(); const ids = await idRows(T.s, T.t);
+          for (const c of todo.sort((a, b) => a.createdAt - b.createdAt)) { const row = teamRowOf(c); await putRow(T.s, T.t, ids, c.id, row); c.tmH = JSON.stringify(row); touched = true; }
+          for (const id of gone.slice()) { const r = ids.get(id); if (r) await g(SV(T.s) + enc(`${qTab(T.t)}!S${r}`) + "?valueInputOption=RAW", { method: "PUT", json: { values: [["ลบจากแอปแล้ว"]] } }); L.goneTeam = (L.goneTeam || []).filter(x => x !== id); }
+        }
+        if (touched) await persist();
       }
     }
     /* data file */
@@ -875,6 +1115,8 @@ function paintCloud(){
   const state = !on ? (authErr ? esc(authErr) : n ? `มี ${n} รายการรอส่ง` : "ยังไม่ได้เข้าสู่ระบบ Google") : SY.busy ? esc(SY.msg || "กำลังส่ง…") : SY.err ? "ไม่สำเร็จ: " + esc(SY.err) : n ? `รออีก ${n} รายการ` : "ส่งครบแล้ว";
   let h = `<div class="contact"><h2 style="font-size:22px">${state}</h2><div class="sub">${on ? "ล่าสุด " + esc(ago(L.last)) : "การเข้าสู่ระบบอยู่ได้ 1 ชั่วโมง ระหว่างนั้นของใหม่เก็บในเครื่องก่อน"}</div></div>`;
   if (!on) h += `<button class="btn lime big" style="margin-top:16px" data-act="login">เข้าสู่ระบบ Google</button>`;
+  else if (SY.wrong) h += `<div class="group" style="margin-top:16px"><button class="cell plainc danger" data-act="switch"><span>ใช้ ${esc(SY.wrong)} กับเครื่องนี้แทน (ล้างข้อมูลในเครื่อง)</span></button></div><p class="foot">ข้อมูลของ ${esc(S.account)} ที่ส่งขึ้น Drive แล้วไม่หาย กลับมาเข้าบัญชีเดิมเมื่อไหร่ก็โหลดกลับมาได้ แต่ของที่ยังไม่ได้ส่งขึ้นในเครื่องนี้จะหายไป</p>`;
+  else if (SY.need === "team") h += `<button class="btn lime big" style="margin-top:16px" data-act="login">ให้สิทธิ์เขียนโฟลเดอร์ทีม</button><p class="foot">ต้องเข้าสู่ระบบอีกครั้งเพื่อให้แอปส่งสำเนาเข้าโฟลเดอร์ที่ ${esc((S.teamLink || {}).o || "")} แชร์ไว้</p>`;
   else h += `<div class="group" style="margin-top:16px">
       <button class="cell" data-act="syncnow"${SY.busy ? " disabled" : ""}><i class="ic" style="background:var(--lime);color:var(--lime-ink)">↻</i><span>ส่งเดี๋ยวนี้</span></button>
       ${L.drive.root ? `<a class="cell" href="https://drive.google.com/drive/folders/${esc(L.drive.root)}" target="_blank" rel="noopener"><i class="ic" style="background:#1a73e8">D</i><span>เปิดโฟลเดอร์ใน Drive</span></a>` : ""}
@@ -884,18 +1126,36 @@ function paintCloud(){
   $("#cloudBody").innerHTML = h;
 }
 $("#cloudBtn").addEventListener("click", () => { $("#cloudSheet").classList.add("on"); paintCloud(); });
-$("#cloudBody").addEventListener("click", e => { const a = e.target.closest("[data-act]"); if (!a) return; if (a.dataset.act === "login") signIn(); if (a.dataset.act === "syncnow") sync(); if (a.dataset.act === "logout") { dropToken(); paintCloud(); } });
+$("#cloudBody").addEventListener("click", e => { const a = e.target.closest("[data-act]"); if (!a) return; if (a.dataset.act === "login") signIn(); if (a.dataset.act === "syncnow") sync(); if (a.dataset.act === "logout") { dropToken(); paintCloud(); }
+  if (a.dataset.act === "switch") { if (a.dataset.sure !== "1") { a.dataset.sure = "1"; a.querySelector("span").textContent = "แตะอีกครั้งเพื่อยืนยัน — ข้อมูลในเครื่องนี้จะถูกล้าง"; return; }
+    (async () => { try { for (const st of ["kv", "blobs"]) await IDB.tx(st, "readwrite", s => s.clear()); } catch {} location.reload(); })(); } });
 
 /* ================= my card (canvas = what is shown, shared and emailed) ================= */
 const loadImg = src => new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = src; });
 const fbShort = u => String(u || "").replace(/^https?:\/\/(www\.)?/i, "").replace(/\/$/, "");
 function rr(x, y, w, h, r, ctx){ ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
-async function setImgSrc(kind){ const u = await photoUrl("set:" + kind); return u || (kind === "qr" ? DEF_QR : DEF_CARD); }
+/* settings pictures (card, QR, brochures): "local" = only on this phone so far, "d:<id>" = in this account's Drive, fetched once per phone */
+async function assetUrl(key, ref){
+  if (!ref) return "";
+  if (ref === "local" || (L.assets && L.assets[key] === ref)) return photoUrl(key);
+  if (String(ref).startsWith("d:") && token()) {
+    try { const b = await gdBlob(ref.slice(2)); await blobPut(key, b); L.assets = { ...(L.assets || {}), [key]: ref }; persistLocal(); urlCache.delete(key); return photoUrl(key); } catch {}
+  }
+  return "";
+}
+async function setImgSrc(kind){ const u = await assetUrl("set:" + kind, kind === "qr" ? S.qrImg : S.cardImg); return u || (isTeam() ? "" : (kind === "qr" ? DEF_QR : DEF_CARD)); }
+const placeholder = (t1, t2) => { const ln = (t, y, sz, fill, w) => String(t).split("\n").map((x, i) => `<text x="432" y="${y + i * sz * 1.35}" fill="${fill}" font-family="Arial,sans-serif" font-size="${sz}" font-weight="${w}" text-anchor="middle">${esc(x)}</text>`).join("");
+  return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 864 1500"><rect width="864" height="1500" rx="48" fill="#1c1c1e"/><rect x="20" y="20" width="824" height="1460" rx="34" fill="none" stroke="#d7e217" stroke-width="5" stroke-dasharray="26 20"/>${ln(t1, 640, 58, "#d7e217", 700)}${ln(t2, 790, 36, "#8e8e93", 400)}</svg>`); };
 async function renderCard(){
   try {
     try { if (!window.__qf) { const f = new FontFace("Questrial", "url(questrial.ttf)"); await f.load(); document.fonts.add(f); window.__qf = 1; } } catch {}
     try { await document.fonts.load("700 24px Roboto"); } catch {}
-    const base = await loadImg(S.cardImg ? await setImgSrc("card") : DEF_CARD).catch(() => loadImg(DEF_CARD));
+    if (L.fresh) { cardJpeg = ""; $("#cardImg").src = placeholder("ยินดีต้อนรับสู่\nCardDrop", "แตะเพื่อเข้าสู่ระบบ\nด้วยบัญชี Google ของคุณ"); return; }
+    if (isTeam()) {
+      const u = S.cardImg ? await setImgSrc("card") : "";
+      if (!u) { cardJpeg = ""; $("#cardImg").src = placeholder(S.cardImg ? "กำลังโหลด\nรูปนามบัตร" : "ยังไม่มี\nรูปนามบัตร", S.cardImg ? "เข้าสู่ระบบ Google\nแล้วรอสักครู่" : "แตะเพื่อเพิ่มรูปนามบัตร\nหรือโบรชัวร์ในตั้งค่า"); return; }
+    }
+    const base = await loadImg(S.cardImg ? await setImgSrc("card") : DEF_CARD).catch(() => isTeam() ? Promise.reject(0) : loadImg(DEF_CARD));
     const cv = $("#cv"), W = base.naturalWidth, H = base.naturalHeight, k = W / 864, ctx = cv.getContext("2d");
     cv.width = W; cv.height = H; ctx.drawImage(base, 0, 0);
     if (S.showQr) {
@@ -923,7 +1183,7 @@ async function renderCard(){
     }
     cardJpeg = cv.toDataURL("image/jpeg", .9);
     $("#cardImg").src = cardJpeg;
-  } catch { }
+  } catch { if (isTeam()) { cardJpeg = ""; $("#cardImg").src = placeholder("เปิดรูปนามบัตร\nไม่ได้", "ลองเลือกรูปใหม่\nในตั้งค่า"); } } finally { const h = $("#myCard .hint"); if (h) h.style.display = cardJpeg ? "" : "none"; }
 }
 const cardBlob = async () => { if (!cardJpeg) await renderCard(); const b = atob(cardJpeg.split(",")[1]), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return new Blob([u], { type: "image/jpeg" }); };
 
@@ -940,8 +1200,10 @@ function showQR(i){
 }
 $("#qrSeg").addEventListener("click", e => { const b = e.target.closest("[data-i]"); if (b) showQR(+b.dataset.i); });
 async function openMe(){
-  openQR("เพิ่มเพื่อนกับ Sea", [
-    { tab: "LINE", img: S.qrImg ? await setImgSrc("qr") : DEF_QR, url: S.lineUrl, cap: "LINE ID: " + S.lineId, sub: "สแกนด้วยแอป LINE เพื่อเพิ่มเพื่อน" },
+  if (L.fresh) { signIn(); return; }
+  if (isTeam() && !cardJpeg && !S.lineUrl) { go("set"); return; }
+  openQR("เพิ่มเพื่อนกับ " + (isTeam() ? S.company : "Sea"), [
+    isTeam() ? { tab: "LINE", url: S.lineUrl, cap: S.lineId ? "LINE: " + S.lineId : "LINE OA", sub: "สแกนด้วยแอป LINE เพื่อเพิ่มเพื่อน" } : { tab: "LINE", img: S.qrImg ? await setImgSrc("qr") : DEF_QR, url: S.lineUrl, cap: "LINE ID: " + S.lineId, sub: "สแกนด้วยแอป LINE เพื่อเพิ่มเพื่อน" },
     { tab: "Facebook", url: S.facebook, cap: S.nameEn, sub: fbShort(S.facebook) },
     { tab: "LinkedIn", url: S.linkedin, cap: S.nameEn, sub: fbShort(S.linkedin) }
   ].filter(x => x.url || x.img));
@@ -966,7 +1228,7 @@ $("#links").addEventListener("click", e => { const b = e.target.closest("[data-l
 
 /* ================= send my card ================= */
 const cardKey = () => [S.cardImg, S.qrImg, S.showQr, S.showRows, S.lineId, S.facebook, S.qrCaption].join("|");
-const cardMsg = link => `นามบัตร ${S.nameEn} · ${S.company}\n${link}\nLINE: ${S.lineId} · ${S.phone}`;
+const cardMsg = link => isTeam() ? `นามบัตร ${[L.user.name, S.company].filter(Boolean).join(" · ")}\n${link}${me().phone ? "\nโทร " + me().phone : ""}` : `นามบัตร ${S.nameEn} · ${S.company}\n${link}\nLINE: ${S.lineId} · ${S.phone}`;
 const linkReady = () => S.cardLink && S.cardLinkKey === cardKey();
 function setShareLinks(link){ const m = enc(cardMsg(link)); $("#shLine").href = "https://line.me/R/share?text=" + m; $("#shWa").href = "https://wa.me/?text=" + m; }
 async function prepLink(){
@@ -976,25 +1238,25 @@ async function prepLink(){
   msg.textContent = "กำลังสร้างลิงก์นามบัตรบน Google Drive (ครั้งแรกครั้งเดียว)…";
   try {
     await ensureFolders();
-    const f = await gdUpload(await cardBlob(), "Namecard – " + S.nameEn + ".jpg", L.drive.root, "image/jpeg");
+    const f = await gdUpload(await cardBlob(), kitFile({ id: "card" }), L.drive.root, "image/jpeg");
     await g(`${GD}/files/${f.id}/permissions`, { method: "POST", json: { role: "reader", type: "anyone" } });
     S.cardLink = safeUrl(f.webViewLink) || `https://drive.google.com/file/d/${f.id}/view`; S.cardLinkKey = cardKey(); S.u = Date.now(); await persist(); syncSoon();
     setShareLinks(S.cardLink); msg.textContent = "ลิงก์นามบัตร: " + S.cardLink; return S.cardLink;
   } catch (e) { msg.textContent = "สร้างลิงก์ไม่สำเร็จ: " + e.message; return null; }
 }
-$("#shareBtn").addEventListener("click", async () => { await renderCard(); $("#shImg").src = cardJpeg; $("#shareSheet").classList.add("on"); prepLink(); });
+$("#shareBtn").addEventListener("click", async () => { await renderCard(); if (!cardJpeg) { toast("ยังไม่มีรูปนามบัตร — เพิ่มได้ในตั้งค่า", 3500); go("set"); return; } $("#shImg").src = cardJpeg; $("#shareSheet").classList.add("on"); prepLink(); });
 ["#shLine", "#shWa"].forEach(s => $(s).addEventListener("click", e => { if (!linkReady()) { e.preventDefault(); $("#shMsg").textContent = "รอสร้างลิงก์ก่อนสักครู่ แล้วกดอีกครั้ง"; } }));
 $("#shCopy").addEventListener("click", async () => { const l = await prepLink(); if (!l) return; try { await navigator.clipboard.writeText(cardMsg(l)); $("#shMsg").textContent = "คัดลอกแล้ว วางในแชทได้เลย"; } catch { $("#shMsg").textContent = "คัดลอกไม่ได้ — กดค้างที่ลิงก์ด้านบนเพื่อคัดลอก"; } });
 $("#shNative").addEventListener("click", async () => {
   const note = $("#shNativeNote"); note.hidden = true;
   try {
-    const file = new File([await cardBlob()], "Chuchchon_360TRUCK_Namecard.jpg", { type: "image/jpeg" });
+    const file = new File([await cardBlob()], kitFile({ id: "card" }), { type: "image/jpeg" });
     if (!navigator.share || (navigator.canShare && !navigator.canShare({ files: [file] }))) throw 0;
     await navigator.share({ files: [file], title: "นามบัตร " + S.nameEn, text: linkReady() ? cardMsg(S.cardLink) : "" });
   } catch (e) { if (e && e.name === "AbortError") return; note.textContent = "เครื่องนี้เปิดเมนูแชร์ไม่ได้ — ใช้ “ส่งลิงก์ทาง LINE” หรือบันทึกรูปแทน"; note.hidden = false; }
 });
 $("#shSave").addEventListener("click", async () => {
-  const a = document.createElement("a"); a.href = URL.createObjectURL(await cardBlob()); a.download = "Chuchchon_360TRUCK_Namecard.jpg"; document.body.append(a); a.click(); a.remove();
+  const a = document.createElement("a"); a.href = URL.createObjectURL(await cardBlob()); a.download = kitFile({ id: "card" }); document.body.append(a); a.click(); a.remove();
   $("#shMsg").textContent = "บันทึกแล้ว เปิด Gallery แล้วกดแชร์ → Quick Share / LINE ได้เลย";
 });
 
@@ -1531,18 +1793,27 @@ $("#selfieDel").addEventListener("click", () => { if (!cur) return; cur.selfie =
 function firstName(s){ return String(s || "").replace(/^(คุณ|นาย|นางสาว|นาง|ดร\.|Mr\.?|Mrs\.?|Ms\.?|Dr\.?)\s*/i, "").trim().split(/\s+/)[0] || ""; }
 const langOf = c => c.mail && c.mail.lang ? c.mail.lang : (/[\u0E00-\u0E7F]/.test((c.name_th || "") + (c.company || "")) ? "th" : (c.name_en || c.company ? "en" : "th"));
 /* the nice-to-meet-you email for one person, from the templates in Settings */
-function composeMail(c, lang){
+/* who is sending: the owner, or the person using this team phone */
+const me = () => isTeam() ? { name: L.user.name, phone: L.user.phone || S.phone, line: L.user.line || S.lineId } : { name: S.nameTh || S.nameEn, phone: S.phone, line: S.lineId };
+/* fill {sender} {senderPhone} {senderLine} {account}; a line whose sender detail is blank is left out */
+function senderFill(t){
+  const m = me(), v = { sender: m.name, senderPhone: m.phone, senderLine: m.line, account: S.account || S.email };
+  return String(t || "").split("\n").filter(line => !Object.keys(v).some(k => line.includes("{" + k + "}") && !String(v[k] || "").trim()))
+    .join("\n").replace(/\{(sender|senderPhone|senderLine|account)\}/g, (_, k) => v[k]);
+}
+function composeMail(c, lang, kitId){
   const en = lang === "en";
   const name = en ? (firstName(c.name_en) || firstName(c.name_th) || "there") : (firstName(c.name_th) || firstName(c.name_en));
   const company = String(c.company || "").trim() || (en ? "your team" : "บริษัทของคุณ"), place = String(c.place || "").trim().replace(/^ที่\s*/, "") || (en ? "the event" : "งาน");
-  const fill = t => String(t || "").replaceAll("{name}", name).replaceAll("{company}", company).replaceAll("{place}", place).replaceAll("{signature}", en ? S.sigEn : S.sigTh);
+  const k = kitOf(kitId), kitName = k ? (k.id === "card" ? (en ? "business card" : "นามบัตร") : k.name) : (en ? "company information" : "ข้อมูลของเรา");
+  const fill = t => senderFill(String(t || "").replaceAll("{signature}", en ? S.sigEn : S.sigTh)).replaceAll("{name}", name).replaceAll("{company}", company).replaceAll("{place}", place).replaceAll("{kit}", kitName);
   return { subject: fill(en ? S.subjEn : S.subjTh), body: fill(en ? S.bodyEn : S.bodyTh) };
 }
 function chatText(c){
   const en = !/[฀-๿]/.test((c.name_th || "") + (c.company || "")) && !!(c.name_en || c.company);
   const name = en ? (firstName(c.name_en) || firstName(c.name_th) || "there") : (firstName(c.name_th) || firstName(c.name_en));
   const place = String(c.place || "").replace(/^ที่\s*/, "") || (en ? "the event" : "งาน"), company = c.company || (en ? "your team" : "บริษัทของคุณ");
-  return String(en ? S.chatEn : S.chatTh).replaceAll("{name}", name).replaceAll("{place}", place).replaceAll("{company}", company);
+  return senderFill(en ? S.chatEn : S.chatTh).replaceAll("{name}", name).replaceAll("{place}", place).replaceAll("{company}", company);
 }
 function waNumber(c){ let n = String(c.mobile || c.phone || "").replace(/[^\d+]/g, ""); if (!n) return ""; if (n.startsWith("+")) return n.slice(1); if (n.startsWith("00")) return n.slice(2); if (n.startsWith("0")) return "66" + n.slice(1); return n; }
 function chatHref(kind, c){ const t = enc(chatText(c)); return kind === "line" ? "https://line.me/R/share?text=" + t : "https://wa.me/" + waNumber(c) + "?text=" + t; }
@@ -1563,7 +1834,7 @@ $("#form").addEventListener("submit", async e => {
   try {
     const base = isEdit ? (D.cards.find(c => c.id === d.docId) || {}) : {};
     const id = d.docId || ("c" + uid());
-    const c = { ...base, ...rec, id, lat: d.gps && d.locOk ? d.gps[0] : null, lng: d.gps && d.locOk ? d.gps[1] : null, createdAt: base.createdAt || Date.now(), u: Date.now(), sheetDirty: true };
+    const c = { ...base, ...rec, id, lat: d.gps && d.locOk ? d.gps[0] : null, lng: d.gps && d.locOk ? d.gps[1] : null, createdAt: base.createdAt || Date.now(), u: Date.now(), sheetDirty: true, by: base.by || (isTeam() ? L.user.name : "") };
     if (d.blob && (!isEdit || d.photoChanged)) {
       if (isEdit && d.orig && !(await blobGet(id + ":photo_orig"))) await blobPut(id + ":photo_orig", d.orig);
       if (!isEdit && d.orig) await blobPut(id + ":photo_orig", d.orig);
@@ -1573,8 +1844,8 @@ $("#form").addEventListener("submit", async e => {
     else if (d.selfieRemoved) c.selfie = null;
     if (wantMail) {
       const m = base.mail && base.mail.status !== "skipped" ? base.mail : null;
-      if (!m) { const lang = (d.ocr && d.ocr.lang === "en") ? "en" : langOf(c); c.mail = { status: "draft", to: rec.email, lang, ...composeMail(c, lang) }; }
-      else if (m.status !== "sent" && m.status !== "queued" && !m.touched) { c.mail = { ...m, to: rec.email, ...composeMail(c, m.lang || langOf(c)) }; }   /* name or place changed: rewrite an untouched draft */
+      if (!m) { const lang = (d.ocr && d.ocr.lang === "en") ? "en" : langOf(c); const kit = (kitOf(S.kitDefault) || {}).id; c.mail = { status: "draft", to: rec.email, lang, kit, ...composeMail(c, lang, kit) }; }
+      else if (m.status !== "sent" && m.status !== "queued" && !m.touched) { c.mail = { ...m, to: rec.email, ...composeMail(c, m.lang || langOf(c), m.kit) }; }   /* name or place changed: rewrite an untouched draft */
       else c.mail = { ...m, to: m.to && m.status === "sent" ? m.to : rec.email };
     } else if (!base.mail) c.mail = { status: "skipped" };
     const i = D.cards.findIndex(x => x.id === id); if (i >= 0) D.cards[i] = c; else D.cards.push(c);
@@ -1595,6 +1866,14 @@ $("#form").addEventListener("submit", async e => {
 });
 $("#skipBtn").addEventListener("click", () => { if (!cur) return; const d = cur; if (d.status === "edit") IDB.del("kv", "editdraft").catch(() => {}); drafts = drafts.filter(x => x !== d); saveDrafts(); IDB.del("blobs", "draft:" + d.id).catch(() => {}); openDraft(drafts.find(x => x.status === "ready") || drafts[0]); });
 
+/* ================= who uses this phone (team accounts) ================= */
+function openWho(){ $("#whoAcc").textContent = S.account; $("#whoName").value = L.user.name; $("#whoPhone").value = L.user.phone; $("#whoLine").value = L.user.line; $("#whoErr").hidden = true; $("#whoSheet").classList.add("on"); }
+$("#whoSave").addEventListener("click", () => {
+  const n = $("#whoName").value.trim(); if (!n) { $("#whoErr").hidden = false; return; }
+  L.user = { name: n, phone: $("#whoPhone").value.trim(), line: $("#whoLine").value.trim() }; persistLocal();
+  $("#whoSheet").classList.remove("on"); applySettings(); toast("เครื่องนี้ใช้โดย " + n);
+});
+
 /* ================= review the email before it goes ================= */
 const fmtWhen = t => new Date(t).toLocaleString("th-TH", { day: "numeric", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit" });
 function histHtml(c, max){
@@ -1604,31 +1883,45 @@ function histHtml(c, max){
 let mailCur = null, mailT = 0;
 function mailRead(){ return { to: $("#mTo").value.trim(), subject: $("#mSubj").value, body: $("#mBody").value }; }
 /* the open email is saved into the record as you type (status stays "not sent" until you press send) */
-function mailFlush(){
+function mailFlush(force){
   clearTimeout(mailT); if (!mailCur) return; const c = D.cards.find(x => x.id === mailCur.id); if (!c) return;
   const v = mailRead(), m = c.mail || {};
-  if (v.to === (m.to || "") && v.subject === (m.subject || "") && v.body === (m.body || "") && mailCur.lang === m.lang) return;
-  c.mail = { ...m, ...v, lang: mailCur.lang, touched: mailCur.touched || m.touched, status: m.status === "sent" || m.status === "queued" ? m.status : (m.status === "failed" ? "failed" : "draft") };
+  if (!force && v.to === (m.to || "") && v.subject === (m.subject || "") && v.body === (m.body || "") && mailCur.lang === m.lang && mailCur.kit === m.kit) return;
+  c.mail = { ...m, ...v, kit: mailCur.kit, lang: mailCur.lang, touched: mailCur.touched || m.touched, status: m.status === "sent" || m.status === "queued" ? m.status : (m.status === "failed" ? "failed" : "draft") };
   if (m.status === "sent") c.mail.status = "sent";
   c.u = Date.now(); persist();
 }
-function mailPreview(){ const v = mailRead(); $("#mPrev").innerHTML = mailHtml(v.body, cardJpeg || "namecard.jpg"); }
+async function mailPreview(){
+  if (!mailCur) return; const v = mailRead(), kit = kitOf(mailCur.kit), jpg = await kitJpeg(kit);
+  $("#mPrev").innerHTML = mailHtml(v.body + (kit && safeUrl(kit.link) && !v.body.includes(kit.link) ? `
+
+${kit.linkLabel || "เปิดโบรชัวร์"}: ${kit.link}` : ""), jpg, kit);
+  $("#mKitAtt").hidden = !jpg; $("#mCard").src = jpg || ""; $("#mKitName").innerHTML = kit ? `${esc(kit.id === "card" ? "นามบัตร" : kit.name)}<br><small>รูปในเนื้ออีเมล${safeUrl(kit.link) ? " + ลิงก์" : ""}</small>` : "";
+  const l = kitList(); $("#mKits").hidden = l.length < 2;
+  $("#mKits").innerHTML = l.map(k => `<button type="button" data-kit="${esc(k.id)}" class="${kit && k.id === kit.id ? "on" : ""}">${esc(k.id === "card" ? "นามบัตร" : k.name)}</button>`).join("");
+}
+$("#mKits").addEventListener("click", e => {
+  const b = e.target.closest("[data-kit]"); if (!b || !mailCur) return; mailCur.kit = b.dataset.kit;
+  const c = D.cards.find(x => x.id === mailCur.id);
+  if (c && !mailCur.touched) { const t = composeMail(c, mailCur.lang, mailCur.kit); $("#mSubj").value = t.subject; $("#mBody").value = t.body; }
+  mailPreview(); mailFlush(true);
+});
 function mailLangPaint(){ $$("#mLang button").forEach(b => b.classList.toggle("on", b.dataset.l === mailCur.lang)); }
 async function openMail(id, note){
   const c = D.cards.find(x => x.id === id); if (!c) return;
   if (!cardJpeg) await renderCard();
-  const m = c.mail || {}, lang = m.lang || langOf(c);
+  const m = c.mail || {}, lang = m.lang || langOf(c), kit = (kitOf(m.kit) || {}).id;
   /* a sent email opens as a fresh copy to send again; an unsent one opens as you left it */
   const keep = m.subject && m.body && m.status !== "sent" && m.status !== "skipped";
-  const t = keep ? { subject: m.subject, body: m.body } : composeMail(c, lang);
-  mailCur = { id, lang, touched: keep ? !!m.touched : false };
+  const t = keep ? { subject: m.subject, body: m.body } : composeMail(c, lang, kit);
+  mailCur = { id, lang, kit, touched: keep ? !!m.touched : false };
   $("#mTo").value = (m.status !== "sent" && m.to) || c.email || ""; $("#mFrom").value = S.account || S.email;
-  $("#mSubj").value = t.subject; $("#mBody").value = t.body; $("#mCard").src = cardJpeg || "namecard.jpg"; $("#mVcf").textContent = vcfName();
+  $("#mSubj").value = t.subject; $("#mBody").value = t.body; $("#mVcf").textContent = vcfName();
   mailLangPaint(); mailPreview();
   $("#mHist").innerHTML = (c.mailLog || []).length ? `<div class="sec">ประวัติการส่ง</div><div class="group">${histHtml(c)}</div>` : "";
   $("#mMsg").textContent = note || (m.status === "failed" ? "ครั้งก่อนส่งไม่สำเร็จ: " + (m.err || "") : m.status === "sent" ? "ส่งไปแล้วเมื่อ " + fmtWhen(m.at) + " · ส่งซ้ำได้" : "แก้ได้เลย ระบบเก็บให้อัตโนมัติ");
   $("#mailSheet").classList.add("on"); $("#mailSheet .body").scrollTop = 0;
-  if (keep || m.status === "sent") mailFlush(); else { c.mail = { ...m, to: $("#mTo").value, lang, ...t, status: "draft" }; persist(); }
+  if (keep || m.status === "sent") mailFlush(); else { c.mail = { ...m, to: $("#mTo").value, lang, kit, ...t, status: "draft" }; persist(); }
 }
 ["#mTo", "#mSubj", "#mBody"].forEach(sel => $(sel).addEventListener("input", () => { if (!mailCur) return; if (sel !== "#mTo") mailCur.touched = true; clearTimeout(mailT); mailT = setTimeout(() => { mailFlush(); mailPreview(); }, 400); }));
 $("#mLang").addEventListener("click", e => {
@@ -1636,7 +1929,7 @@ $("#mLang").addEventListener("click", e => {
   const c = D.cards.find(x => x.id === mailCur.id); if (!c) return;
   if (mailCur.touched && b.dataset.sure !== "1") { $$("#mLang button").forEach(x => delete x.dataset.sure); b.dataset.sure = "1"; $("#mMsg").textContent = "ข้อความที่แก้ไว้จะถูกแทนด้วยแบบร่างภาษาใหม่ — แตะอีกครั้งเพื่อยืนยัน"; return; }
   delete b.dataset.sure; mailCur.lang = b.dataset.l; mailCur.touched = false;
-  const t = composeMail(c, mailCur.lang); $("#mSubj").value = t.subject; $("#mBody").value = t.body; mailLangPaint(); mailPreview(); mailFlush(); $("#mMsg").textContent = "เปลี่ยนเป็น" + (mailCur.lang === "en" ? "ภาษาอังกฤษ" : "ภาษาไทย") + "แล้ว";
+  const t = composeMail(c, mailCur.lang, mailCur.kit); $("#mSubj").value = t.subject; $("#mBody").value = t.body; mailLangPaint(); mailPreview(); mailFlush(); $("#mMsg").textContent = "เปลี่ยนเป็น" + (mailCur.lang === "en" ? "ภาษาอังกฤษ" : "ภาษาไทย") + "แล้ว";
 });
 function mailClose(later){
   if (!mailCur) return; mailFlush(); const c = D.cards.find(x => x.id === mailCur.id); mailCur = null; $("#mailSheet").classList.remove("on");
@@ -1648,7 +1941,7 @@ async function mailSend(){
   if (!validEmail(v.to)) { $("#mMsg").textContent = "อีเมลผู้รับดูไม่ถูกต้อง"; $("#mTo").focus(); return; }
   if (!v.subject.trim() || !v.body.trim()) { $("#mMsg").textContent = "ใส่หัวข้อและข้อความก่อนส่ง"; return; }
   const c = D.cards.find(x => x.id === mailCur.id); if (!c) return;
-  c.mail = { ...(c.mail || {}), ...v, subject: v.subject.trim(), lang: mailCur.lang, touched: mailCur.touched, status: "queued", err: "" }; c.u = Date.now(); c.sheetDirty = true; await persist();
+  c.mail = { ...(c.mail || {}), ...v, subject: v.subject.trim(), kit: mailCur.kit, lang: mailCur.lang, touched: mailCur.touched, status: "queued", err: "" }; c.u = Date.now(); c.sheetDirty = true; await persist();
   mailCur = null; $("#mailSheet").classList.remove("on"); renderList();
   if (token()) { toast("กำลังส่งอีเมลถึง " + v.to + "…", 3000); syncSoon(100); } else toast("อีเมลจะส่งทันทีที่เข้าสู่ระบบ Google (ปุ่ม ☁ มุมบน)", 5000);
 }
@@ -1713,7 +2006,7 @@ function openDetail(id){
       ${field("LINE", c.line)}${field("เว็บไซต์", c.website, web)}${field("ที่อยู่", c.address)}
     </div>
     <div class="fields">
-      ${field("เจอกันที่", c.place)}${field("วันที่", dateOf(c.createdAt))}${mapUrl ? field("พิกัด", Number(c.lat).toFixed(5) + ", " + Number(c.lng).toFixed(5), mapUrl) : ""}${field("บันทึก", c.note)}
+      ${field("เจอกันที่", c.place)}${field("วันที่", dateOf(c.createdAt))}${field("เก็บโดย", c.by)}${mapUrl ? field("พิกัด", Number(c.lat).toFixed(5) + ", " + Number(c.lng).toFixed(5), mapUrl) : ""}${field("บันทึก", c.note)}
       <div class="field"><small>อีเมลยินดีที่ได้รู้จัก</small><div>${mailTag(c.mail)}${c.mail && c.mail.status === "sent" && c.mail.at ? ` <span class="muted">${esc(fmtWhen(c.mail.at))}</span>` : ""}</div>${histHtml(c, 3)}</div>
     </div>
     ${c.photo && c.selfie ? `<div class="photos"><img ${ph("photo")} alt="รูปนามบัตร"></div>` : ""}
@@ -1745,7 +2038,7 @@ function openDetail(id){
     }
     if (a.dataset.act === "del") {
       if (a.dataset.sure !== "1") { a.dataset.sure = "1"; a.querySelector("span").textContent = "แตะอีกครั้งเพื่อยืนยันลบ"; return; }
-      D.cards = D.cards.filter(x => x.id !== c.id); D.gone[c.id] = Date.now(); L.goneRows = [...(L.goneRows || []), c.id];
+      D.cards = D.cards.filter(x => x.id !== c.id); D.gone[c.id] = Date.now(); L.goneRows = [...(L.goneRows || []), c.id]; if (isTeam()) L.goneTeam = [...(L.goneTeam || []), c.id];
       await persist(); IDB.del("blobs", c.id + ":photo").catch(() => {}); IDB.del("blobs", c.id + ":selfie").catch(() => {}); IDB.del("blobs", c.id + ":photo_orig").catch(() => {});
       $("#detSheet").classList.remove("on"); renderList(); toast("ลบแล้ว (รูปใน Google Drive ยังอยู่)"); syncSoon();
     }
@@ -1818,20 +2111,43 @@ document.addEventListener("click", e => {
 })();
 
 /* ================= settings ================= */
-let pendQr, pendCard;
+let pendQr = "keep", pendCard = "keep", pendKits = [];
 function fillSettings(){
   $$("#setForm [data-k]").forEach(el => { const v = S[el.dataset.k]; if (el.type === "checkbox") el.checked = !!v; else el.value = v ?? ""; });
   $("#linkRows").innerHTML = S.links.map(l => linkRow(l)).join("");
-  pendQr = S.qrImg; pendCard = S.cardImg;
-  setImgSrc("qr").then(u => $("#setQr").src = S.qrImg ? u : DEF_QR); setImgSrc("card").then(u => $("#setCard").src = S.cardImg ? u : DEF_CARD);
+  pendQr = "keep"; pendCard = "keep"; pendKits = clone(S.kits || []);
+  setImgSrc("qr").then(u => $("#setQr").src = S.qrImg ? u : DEF_QR);
+  setImgSrc("card").then(u => $("#setCard").src = S.cardImg && u ? u : (isTeam() ? placeholder("ไม่มีรูป", "") : DEF_CARD));
+  $("#cardReset").textContent = isTeam() ? "ลบรูป" : "ใช้รูปเดิม"; $("#secMe").textContent = isTeam() ? "ข้อมูลบัญชี" : "ข้อมูลของผม";
+  drawKits(); drawTeam(); drawTeamLink(); $("#whoNow").textContent = L.user.name ? `${L.user.name}${L.user.phone ? " · " + L.user.phone : ""}` : "ยังไม่ได้ตั้งชื่อ — แตะเพื่อตั้ง";
 }
 const linkRow = (l = {}) => `<div class="lrow" data-icon="${esc(l.icon || "")}"><input placeholder="ชื่อปุ่ม" value="${esc(l.label || "")}"><input placeholder="https://…" inputmode="url" value="${esc(l.url || "")}"><button type="button" class="x" data-rm aria-label="ลบลิงก์">✕</button></div>`;
 $("#addLink").addEventListener("click", () => $("#linkRows").insertAdjacentHTML("beforeend", linkRow()));
 $("#linkRows").addEventListener("click", e => { const b = e.target.closest("[data-rm]"); if (b) b.parentElement.remove(); });
-$("#qrUp").addEventListener("change", async e => { const f = e.target.files[0]; e.target.value = ""; if (!f) return; const b = await shrink(f, 1000, .92); await blobPut("set:qr", b); urlCache.delete("set:qr"); pendQr = "local"; $("#setQr").src = await photoUrl("set:qr"); });
-$("#cardUp").addEventListener("change", async e => { const f = e.target.files[0]; e.target.value = ""; if (!f) return; const b = await shrink(f, 1800, .92); await blobPut("set:card", b); urlCache.delete("set:card"); pendCard = "local"; $("#setCard").src = await photoUrl("set:card"); });
+$("#qrUp").addEventListener("change", async e => { const f = e.target.files[0]; e.target.value = ""; if (!f) return; const b = await shrink(f, 1000, .92); await blobPut("set:qr", b); urlCache.delete("set:qr"); pendQr = "local"; if (L.assets) delete L.assets["set:qr"]; $("#setQr").src = await photoUrl("set:qr"); });
+$("#cardUp").addEventListener("change", async e => { const f = e.target.files[0]; e.target.value = ""; if (!f) return; const b = await shrink(f, 1800, .92); await blobPut("set:card", b); urlCache.delete("set:card"); pendCard = "local"; if (L.assets) delete L.assets["set:card"]; drawKitDef(); $("#setCard").src = await photoUrl("set:card"); });
 $("#qrReset").addEventListener("click", () => { pendQr = null; $("#setQr").src = DEF_QR; });
-$("#cardReset").addEventListener("click", () => { pendCard = null; $("#setCard").src = DEF_CARD; });
+$("#cardReset").addEventListener("click", () => { pendCard = null; $("#setCard").src = isTeam() ? placeholder("ไม่มีรูป", "") : DEF_CARD; drawKitDef(); });
+function readKits(){ $$("#kitRows .kit").forEach(r => { const k = pendKits.find(x => x.id === r.dataset.id); if (k) { k.name = r.querySelector(".kn").value.trim(); k.link = r.querySelector(".kl").value.trim(); } }); }
+function drawKits(){
+  $("#kitRows").innerHTML = pendKits.map(k => `<div class="kit" data-id="${esc(k.id)}"><img alt=""><div class="f"><input class="kn" placeholder="ชื่อ เช่น โบรชัวร์ 360TRUCK" value="${esc(k.name || "")}"><input class="kl" placeholder="ลิงก์ PDF https://…" inputmode="url" value="${esc(k.link || "")}"></div><button type="button" class="x" data-rmkit aria-label="ลบ">✕</button></div>`).join("");
+  $$("#kitRows .kit").forEach(r => { const k = pendKits.find(x => x.id === r.dataset.id); (k.imgNew ? photoUrl("set:kit:" + k.id) : assetUrl("set:kit:" + k.id, k.img)).then(u => { if (u) r.querySelector("img").src = u; }); });
+  drawKitDef();
+}
+function drawKitDef(){
+  readKits(); const card = !isTeam() || pendCard === "local" || (pendCard === "keep" && S.cardImg);
+  const opts = (card ? [["card", "นามบัตร"]] : []).concat(pendKits.map(k => [k.id, k.name || "โบรชัวร์"]));
+  $("#kitDef").innerHTML = opts.length ? opts.map(([v, t]) => `<option value="${esc(v)}"${v === S.kitDefault ? " selected" : ""}>${esc(t)}</option>`).join("") : '<option value="">ยังไม่มี — อีเมลจะไม่มีรูปแนบ</option>';
+}
+$("#kitRows").addEventListener("click", e => { const b = e.target.closest("[data-rmkit]"); if (!b) return; readKits(); const id = b.closest(".kit").dataset.id; pendKits = pendKits.filter(k => k.id !== id); drawKits(); });
+$("#kitRows").addEventListener("input", () => drawKitDef());
+$("#kitUp").addEventListener("change", async e => {
+  const f = e.target.files[0]; e.target.value = ""; if (!f) return; readKits();
+  const id = "k" + uid(), b = await shrink(f, 1600, .9); await blobPut("set:kit:" + id, b); urlCache.delete("set:kit:" + id);
+  pendKits.push({ id, name: "โบรชัวร์ 360TRUCK", link: "", img: "local", imgNew: true }); drawKits();
+  toast("เพิ่มแล้ว ใส่ชื่อและลิงก์ PDF แล้วกดบันทึกการตั้งค่า", 4000);
+});
+$("#whoEdit").addEventListener("click", openWho);
 $("#setDefaults").addEventListener("click", e => { const b = e.currentTarget; if (b.dataset.sure !== "1") { b.dataset.sure = "1"; b.textContent = "แตะอีกครั้งเพื่อยืนยัน"; return; } b.dataset.sure = ""; b.textContent = "คืนค่าเริ่มต้นทั้งหมด"; const k = [S.apiKey, S.geminiKey]; S = clone(DEF); [S.apiKey, S.geminiKey] = k; fillSettings(); toast("คืนค่าเริ่มต้นแล้ว กดบันทึกเพื่อใช้"); });
 $("#setForm").addEventListener("submit", async e => {
   e.preventDefault();
@@ -1839,7 +2155,10 @@ $("#setForm").addEventListener("submit", async e => {
   $$("#setForm [data-k]").forEach(el => n[el.dataset.k] = el.type === "checkbox" ? el.checked : el.value.trim());
   n.links = $$("#linkRows .lrow").map(r => { const [a, b] = r.querySelectorAll("input"); return { label: a.value.trim(), url: b.value.trim(), icon: r.dataset.icon || "↗" }; }).filter(l => l.label && l.url);
   const bad = n.links.find(l => !safeUrl(l.url)); if (bad) { $("#setErr").textContent = "ลิงก์ “" + bad.label + "” ต้องขึ้นต้นด้วย https://"; $("#setErr").hidden = false; return; }
-  $("#setErr").hidden = true; n.qrImg = pendQr || null; n.cardImg = pendCard || null; n.u = Date.now();
+  readKits(); const badKit = pendKits.find(k => k.link && !safeUrl(k.link)); if (badKit) { $("#setErr").textContent = "ลิงก์ของ “" + (badKit.name || "โบรชัวร์") + "” ต้องขึ้นต้นด้วย https://"; $("#setErr").hidden = false; return; }
+  $("#setErr").hidden = true; n.qrImg = pendQr === "keep" ? S.qrImg : pendQr; n.cardImg = pendCard === "keep" ? S.cardImg : pendCard; n.u = Date.now();
+  n.kits = pendKits.map(k => { const old = (S.kits || []).find(x => x.id === k.id); const o = { id: k.id, name: k.name || "โบรชัวร์", link: k.link || "", img: k.imgNew ? "local" : (old ? old.img : k.img) }; return o; });
+  n.kitDefault = $("#kitDef").value || "card"; n.team = S.team; n.teamLink = S.teamLink;
   D.settings = n; S = n; await persist(); applySettings(); toast("บันทึกการตั้งค่าแล้ว"); syncSoon();
 });
 async function bulkPhotos(undo){
@@ -1872,15 +2191,16 @@ $("#testKey").addEventListener("click", async () => {
   catch (x) { el.textContent = x.code === "busy" || x.code === "rate" ? "key ใช้ได้ แต่ Gemini ทุกรุ่นมีคนใช้เยอะตอนนี้ — ลองใหม่อีกสักครู่ (กดบันทึกการตั้งค่าได้เลย)" : (OCR_ERR[x.code] || "ใช้ไม่ได้") + (x.message ? " · " + x.message : ""); }
   Object.assign(S, keep);
 });
-function applySettings(){ $("#appV").textContent = "เวอร์ชัน " + APP_V; fillSettings(); drawLinks(); renderCard(); $("#mFrom").value = S.account || S.email; paintCloud(); }
+function applySettings(){ document.body.classList.toggle("team", isTeam()); document.body.classList.toggle("fresh", !!L.fresh); $("#appV").textContent = "เวอร์ชัน " + APP_V; fillSettings(); drawLinks(); renderCard(); $("#mFrom").value = S.account || S.email; paintCloud(); }
 
 /* ================= boot ================= */
 (async () => {
   try { await IDB.open(); } catch { toast("เครื่องนี้เก็บข้อมูลไม่ได้ (โหมดไม่ระบุตัวตน?)", 6000); }
   try {
-    const d = await IDB.get("kv", "data"); if (d) { D = d; D.settings = { ...clone(DEF), ...(d.settings || {}) }; S = D.settings;
+    const d = await IDB.get("kv", "data"); if (!d) L.fresh = true;
+    if (d) { D = d; D.settings = { ...baseFor(d.settings), ...(d.settings || {}) }; S = D.settings;
       if (S.geminiModel === "gemini-flash-latest" && !S.m2) { S.geminiModel = DEF.geminiModel; S.m2 = 1; } }
-    const l = await IDB.get("kv", "local"); if (l) L = Object.assign(L, l, { rev: 0 });
+    const l = await IDB.get("kv", "local"); if (l) L = Object.assign(L, l, { rev: 0, user: Object.assign({ name: "", phone: "", line: "" }, l.user || {}) });
     const ds = await IDB.get("kv", "drafts");
     if (ds && ds.length) for (const x of ds) { const b = await blobGet("draft:" + x.id); if (!b) continue; const sb = await blobGet("draftself:" + x.id);
       const ob = await blobGet("draftorig:" + x.id);
