@@ -224,6 +224,12 @@ form{display:block;margin-top:6px}
 .photos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:14px}
 .photos img{width:100%;border-radius:12px;background:#000;display:block;aspect-ratio:4/3;object-fit:contain}
 .photos img:only-child{grid-column:1/-1}
+.contact .avatar,.photos img,#previewImg{cursor:zoom-in}
+.viewer{position:fixed;inset:0;z-index:40;background:#000;touch-action:none;overflow:hidden;animation:dim .2s ease}
+.viewer[hidden]{display:none}
+.viewer img{position:absolute;left:0;top:0;transform-origin:0 0;will-change:transform;user-select:none;-webkit-user-select:none;-webkit-user-drag:none;max-width:none}
+.viewer .x{position:absolute;top:calc(12px + env(safe-area-inset-top));right:14px;z-index:2;background:rgba(60,60,64,.75);backdrop-filter:blur(10px)}
+.viewer p{position:absolute;left:0;right:0;bottom:calc(18px + env(safe-area-inset-bottom));text-align:center;color:rgba(255,255,255,.55);font-size:13px;margin:0;transition:opacity .4s;pointer-events:none}
 .cell.danger span{color:var(--bad)}
 .cell.plainc{grid-template-columns:1fr}.cell.plainc::after{display:none}
 .cell.plainc span{color:var(--lime)}
@@ -526,6 +532,7 @@ form{display:block;margin-top:6px}
   <div class="body"><div class="head"><h3>Google</h3><button class="x" data-close aria-label="ปิด">✕</button></div><div id="cloudBody"></div></div>
 </div>
 <div class="sheet" id="detSheet" role="dialog" aria-modal="true" aria-label="รายละเอียด"><div class="body" id="detBody"></div></div>
+<div class="viewer" id="viewer" role="dialog" aria-modal="true" aria-label="ดูรูป" hidden><img id="vImg" alt=""><button type="button" class="x" id="vClose" aria-label="ปิด">✕</button><p id="vHint">จีบนิ้วหรือแตะสองครั้งเพื่อซูม</p></div>
 <div class="toast glass" id="toast" role="status" aria-live="polite"></div>
 <canvas id="cv" hidden></canvas>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -541,7 +548,7 @@ const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 
 const toast = (m, ms = 3200) => { const t = $("#toast"); t.textContent = m; t.classList.add("on"); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove("on"), ms); };
 const FIELDS = ["name_th","name_en","title","company","email","mobile","phone","line","website","address","place","note"];
 const validEmail = e => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e || "");
-const DEF_CARD = "namecard.jpg", DEF_QR = "line-qr.png", APP_V = "27 พ.ย. 69 · 5", DET_V = 4;
+const DEF_CARD = "namecard.jpg", DEF_QR = "line-qr.png", APP_V = "27 พ.ย. 69 · 6", DET_V = 4;
 
 const DEF = {
   nameTh: "ชัชชน (Sea)", nameEn: "Chuchchon Saenjaibal (Sea)", title: "Chief Executive Officer", company: "360TRUCK & 360TECHX",
@@ -1735,6 +1742,67 @@ function openDetail(id){
     }
   };
 }
+
+/* ================= full-screen photo: pinch, double-tap, drag; swipe down or ✕ to close ================= */
+const V = { s: 1, x: 0, y: 0, fit: 1, w: 0, h: 0, pts: new Map(), last: 0 };
+function vApply(anim){ const im = $("#vImg"); im.style.transition = anim ? "transform .25s ease" : "none"; im.style.transform = `translate(${V.x}px,${V.y}px) scale(${V.s})`; }
+function vClamp(){
+  const W = innerWidth, H = innerHeight, iw = V.w * V.s, ih = V.h * V.s;
+  V.x = iw <= W ? (W - iw) / 2 : Math.min(0, Math.max(W - iw, V.x));
+  V.y = ih <= H ? (H - ih) / 2 : Math.min(0, Math.max(H - ih, V.y));
+}
+function vFit(anim){ V.fit = Math.min(innerWidth / V.w, innerHeight / V.h); V.s = V.fit; vClamp(); vApply(anim); }
+function vZoomAt(ns, cx, cy, anim){ ns = Math.max(V.fit * .8, Math.min(V.fit * 6, ns)); V.x = cx - (cx - V.x) * ns / V.s; V.y = cy - (cy - V.y) * ns / V.s; V.s = ns; vClamp(); vApply(anim); }
+function openViewer(src){
+  if (!src) return; const im = $("#vImg"), v = $("#viewer");
+  im.onload = () => { V.w = im.naturalWidth; V.h = im.naturalHeight; vFit(false); };
+  im.src = src; v.hidden = false; $("#vHint").style.opacity = 1; setTimeout(() => $("#vHint").style.opacity = 0, 2200);
+  if (im.complete && im.naturalWidth) im.onload();
+}
+const closeViewer = () => { $("#viewer").hidden = true; $("#vImg").removeAttribute("src"); V.pts.clear(); };
+$("#vClose").addEventListener("click", closeViewer);
+addEventListener("keydown", e => { if (e.key === "Escape" && !$("#viewer").hidden) closeViewer(); });
+addEventListener("resize", () => { if (!$("#viewer").hidden && V.w) vFit(false); });
+document.addEventListener("click", e => {
+  const im = e.target.closest(".contact .avatar, .photos img, #previewImg"); if (!im || !im.src || !im.naturalWidth) return;
+  e.preventDefault(); e.stopPropagation(); openViewer(im.currentSrc || im.src);
+}, true);
+(() => {
+  const v = $("#viewer"); let start = null, pinch = null, drag = null;
+  v.addEventListener("pointerdown", e => {
+    if (e.target.id === "vClose") return; e.preventDefault(); try { v.setPointerCapture(e.pointerId); } catch {}
+    V.pts.set(e.pointerId, [e.clientX, e.clientY]);
+    if (V.pts.size === 2) { const [a, b] = [...V.pts.values()]; pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]), s: V.s, cx: (a[0] + b[0]) / 2, cy: (a[1] + b[1]) / 2, x: V.x, y: V.y }; drag = null; }
+    else if (V.pts.size === 1) { drag = { x0: e.clientX, y0: e.clientY, x: V.x, y: V.y, t: Date.now() }; start = drag; }
+  });
+  v.addEventListener("pointermove", e => {
+    if (!V.pts.has(e.pointerId)) return; V.pts.set(e.pointerId, [e.clientX, e.clientY]);
+    if (pinch && V.pts.size >= 2) {
+      const [a, b] = [...V.pts.values()], d = Math.hypot(a[0] - b[0], a[1] - b[1]), cx = (a[0] + b[0]) / 2, cy = (a[1] + b[1]) / 2;
+      const ns = Math.max(V.fit * .6, Math.min(V.fit * 6, pinch.s * d / pinch.d));
+      V.x = cx - (pinch.cx - pinch.x) * ns / pinch.s; V.y = cy - (pinch.cy - pinch.y) * ns / pinch.s; V.s = ns; vApply(false);
+    } else if (drag) {
+      const dx = e.clientX - drag.x0, dy = e.clientY - drag.y0;
+      if (V.s <= V.fit * 1.01) { V.y = drag.y + Math.max(0, dy); vApply(false); v.style.background = `rgba(0,0,0,${Math.max(.3, 1 - Math.max(0, dy) / 400)})`; }
+      else { V.x = drag.x + dx; V.y = drag.y + dy; vClamp(); vApply(false); }
+    }
+  });
+  const end = e => {
+    if (!V.pts.has(e.pointerId)) return; V.pts.delete(e.pointerId);
+    if (pinch) { if (V.pts.size < 2) { pinch = null; if (V.s < V.fit) vFit(true); else { vClamp(); vApply(true); } drag = null; } return; }
+    if (!drag) return; const dx = e.clientX - drag.x0, dy = e.clientY - drag.y0, moved = Math.hypot(dx, dy) > 10; v.style.background = "";
+    if (V.s <= V.fit * 1.01 && dy > 110) { closeViewer(); drag = null; return; }
+    if (!moved) {
+      const now = Date.now();
+      if (now - V.last < 300) { V.last = 0; if (V.s > V.fit * 1.05) vFit(true); else vZoomAt(V.fit * 2.6, e.clientX, e.clientY, true); }
+      else V.last = now;
+    }
+    if (V.s <= V.fit * 1.01) vFit(true);
+    drag = null;
+  };
+  v.addEventListener("pointerup", end); v.addEventListener("pointercancel", end);
+  v.addEventListener("wheel", e => { e.preventDefault(); vZoomAt(V.s * (e.deltaY < 0 ? 1.15 : 1 / 1.15), e.clientX, e.clientY, false); }, { passive: false });
+})();
 
 /* ================= settings ================= */
 let pendQr, pendCard;
