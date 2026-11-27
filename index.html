@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CardDrop</title>
+<meta name="theme-color" content="#000000">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE: calm, precise, Apple-like — true black, grouped inset lists, one lime accent.
+   IDEA: an iOS Wallet pass — your card floats on black; everything else is a quiet grouped list.
+   PICTURE: Sea's portrait card, large, with a soft glow; tap for QR.
+   COLOUR and TYPE: black #000, cells #1c1c1e, lime #d7e217 accent; Inter + IBM Plex Sans Thai, large bold titles.
+   LAYOUT: one column max 640px, large titles, inset grouped sections, frosted tab bar, sheets with a grabber. */
+:root{color-scheme:dark;--bg:#000;--panel:#1c1c1e;--panel2:#2c2c2e;--line:#38383a;--ink:#f5f5f7;--mute:#8e8e93;--lime:#d7e217;--lime-ink:#111200;--bad:#ff453a;--ok:#30d158;--r:16px}
+:root[data-theme=light],:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.45 Inter,"IBM Plex Sans Thai",-apple-system,system-ui,sans-serif;letter-spacing:-.01em;overflow-x:clip;padding-bottom:calc(90px + env(safe-area-inset-bottom));-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:Inter,"IBM Plex Sans Thai",-apple-system,sans-serif;font-weight:700;line-height:1.12;margin:0;letter-spacing:-.025em}
+h2{font-size:32px}
+h3{font-weight:600}
+.wrap{max-width:640px;margin:0 auto;padding:calc(10px + env(safe-area-inset-top)) 16px 28px}
+.top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin:6px 4px 16px}
+.top h1{font-size:34px}
+.pill{border:0;font-family:inherit}.top h1 b{color:var(--lime);font-weight:700}
+.pill{font-size:13px;font-weight:600;color:var(--mute);background:var(--panel);border-radius:99px;padding:5px 11px;white-space:nowrap}
+.view{display:none;animation:fade .25s ease}.view.on{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.mycard{display:block;margin:4px auto 0;width:min(100%,400px);border-radius:22px;overflow:hidden;cursor:pointer;background:#191718;position:relative;aspect-ratio:864/1500;box-shadow:0 30px 60px -20px rgba(215,226,23,.28),0 18px 40px rgba(0,0,0,.7),0 0 0 .5px rgba(255,255,255,.12);transition:transform .2s ease}
+.mycard:active{transform:scale(.985)}
+.mycard img{display:block;width:100%;height:100%;object-fit:cover}
+.mycard .hint{position:absolute;left:50%;transform:translateX(-50%);top:12px;background:rgba(0,0,0,.55);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);color:#fff;font:600 13px Inter,"IBM Plex Sans Thai",sans-serif;padding:5px 12px;border-radius:99px;white-space:nowrap}
+.sec{font-size:13px;font-weight:500;color:var(--mute);text-transform:none;margin:26px 16px 7px}
+/* inset grouped list */
+.links{background:var(--panel);border-radius:var(--r);overflow:hidden}
+.links button{display:grid;grid-template-columns:30px minmax(0,1fr) auto;gap:12px;align-items:center;width:100%;text-align:left;background:none;border:0;color:var(--ink);padding:0 14px 0 14px;min-height:52px;cursor:pointer;font:400 17px Inter,"IBM Plex Sans Thai",sans-serif;position:relative}
+.links button+button::before{content:"";position:absolute;top:0;left:56px;right:0;border-top:.5px solid var(--line)}
+.links button::after{content:"";width:8px;height:8px;border-right:2px solid #5a5a5e;border-top:2px solid #5a5a5e;transform:rotate(45deg);margin-right:4px}
+.links button:active{background:var(--panel2)}
+.links button i{font-style:normal;width:30px;height:30px;border-radius:8px;display:grid;place-items:center;font:700 11px Inter,sans-serif;background:var(--lime);color:var(--lime-ink)}
+.links button span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.btn{appearance:none;border:0;border-radius:14px;min-height:50px;padding:12px 18px;font:600 17px Inter,"IBM Plex Sans Thai",sans-serif;letter-spacing:-.01em;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;color:var(--lime);background:var(--panel);text-align:center;transition:transform .12s ease,opacity .12s}
+.btn:active{transform:scale(.97);opacity:.85}
+.btn svg{width:20px;height:20px;flex:none}
+.btn.lime{background:var(--lime);color:var(--lime-ink)}
+.btn.ghost{background:transparent}
+.btn.small{min-height:38px;font-size:15px;padding:7px 14px;border-radius:99px;background:var(--panel2)}
+.btn:disabled{opacity:.4;cursor:default}
+.btn:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--lime);outline-offset:2px}
+.btn.big{width:100%;min-height:56px;font-size:17px}
+.muted{color:var(--mute);font-size:15px}
+.panel{background:var(--panel);border-radius:var(--r);padding:16px;margin-top:14px}
+.panel h3{font-size:20px}
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media(max-width:480px){.two{grid-template-columns:minmax(0,1fr)}}
+.queue{display:grid;gap:0;margin-top:16px;background:var(--panel);border-radius:var(--r);overflow:hidden}
+.queue:empty{display:none}
+.queue>.muted{padding:10px 16px 4px;font-size:13px}
+.qitem{display:grid;grid-template-columns:48px minmax(0,1fr) auto;gap:12px;align-items:center;background:none;border:0;padding:8px 14px;cursor:pointer;color:var(--ink);font:inherit;text-align:left;width:100%;position:relative}
+.qitem+.qitem::before{content:"";position:absolute;top:0;left:74px;right:0;border-top:.5px solid var(--line)}
+.qitem.on{background:var(--panel2)}
+.qitem img{width:48px;height:48px;object-fit:contain;border-radius:8px;background:#000}
+.qitem b{font-weight:600;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.preview{border-radius:var(--r);overflow:hidden;background:#0b0b0c;margin-top:16px}
+.preview img{display:block;width:100%;max-height:280px;object-fit:contain}
+.status{display:flex;gap:10px;align-items:center;font-size:15px;margin:12px 4px 0;color:var(--mute)}
+.dot{width:16px;height:16px;border-radius:50%;border:2px solid var(--panel2);border-top-color:var(--lime);flex:none;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.dot,.view{animation:none}}
+form{display:grid;gap:12px;margin-top:16px}
+label{display:grid;gap:5px;font-size:13px;font-weight:500;color:var(--mute);padding-left:4px}
+label>input,label>textarea,label>select{margin-left:-4px;width:calc(100% + 4px)}
+input,textarea,select{width:100%;font:17px Inter,"IBM Plex Sans Thai",sans-serif;color:var(--ink);background:var(--panel);border:0;border-radius:12px;padding:12px 14px;min-height:48px;-webkit-appearance:none;appearance:none}
+input::placeholder,textarea::placeholder{color:#5a5a5e}
+.panel input,.panel textarea,.panel select{background:var(--panel2)}
+input:disabled{color:var(--mute)}
+textarea{resize:vertical;line-height:1.45}
+select{background-image:linear-gradient(45deg,transparent 50%,var(--mute) 50%),linear-gradient(135deg,var(--mute) 50%,transparent 50%);background-position:calc(100% - 20px) 21px,calc(100% - 15px) 21px;background-size:5px 5px;background-repeat:no-repeat}
+/* iOS switch */
+.check{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:17px;font-weight:400;color:var(--ink);padding-left:0;flex-direction:row-reverse}
+.check input{appearance:none;-webkit-appearance:none;width:51px;height:31px;min-height:0;padding:0;border-radius:99px;background:#39393d;position:relative;flex:none;cursor:pointer;transition:background .2s;margin:0}
+.check input::after{content:"";position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.35);transition:transform .2s}
+.check input:checked{background:var(--lime)}
+.check input:checked::after{transform:translateX(20px)}
+details summary{cursor:pointer;color:var(--lime);font-size:15px;font-weight:500;padding:10px 0 2px;list-style:none}
+details summary::-webkit-details-marker{display:none}
+.locbox{margin-top:0;display:grid;gap:10px;font-size:15px}
+.locbox a{color:var(--lime);text-decoration:none;font-weight:500}
+.locbox.need{box-shadow:inset 0 0 0 1.5px var(--lime)}
+.ok{color:var(--ok)}.no{color:var(--mute)}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chips:empty{display:none}
+.chips button{background:var(--panel);border:0;color:var(--ink);border-radius:99px;padding:7px 14px;min-height:36px;font:500 15px Inter,"IBM Plex Sans Thai",sans-serif;cursor:pointer}
+.selfie{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.selfie img{width:64px;height:64px;object-fit:cover;border-radius:50%;background:#000;box-shadow:0 0 0 2px var(--lime)}
+.search{margin-bottom:6px;background:var(--panel);border-radius:12px;padding-left:38px;min-height:42px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%238e8e93' stroke-width='2.2'%3E%3Ccircle cx='7' cy='7' r='5.5'/%3E%3Cpath d='m11 11 4 4'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:13px 50%}
+.list{display:block}
+.list .grp{background:var(--panel);border-radius:var(--r);overflow:hidden}
+.item{display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:12px;align-items:center;background:var(--panel);border:0;padding:10px 14px;cursor:pointer;text-align:left;color:var(--ink);font:inherit;width:100%;position:relative}
+.item::after{content:"";width:8px;height:8px;border-right:2px solid #5a5a5e;border-top:2px solid #5a5a5e;transform:rotate(45deg);margin-right:4px}
+.item:active{background:var(--panel2)}
+.day+.item,.list>.item:first-child{border-radius:var(--r) var(--r) 0 0}
+.item+.item::before{content:"";position:absolute;top:0;left:82px;right:0;border-top:.5px solid var(--line)}
+.item:has(+.day),.list>.item:last-child{border-radius:0 0 var(--r) var(--r)}
+.day+.item:has(+.day),.day+.item:last-child{border-radius:var(--r)}
+.item img{width:56px;height:56px;object-fit:contain;border-radius:10px;background:#000}
+.item .n{font-weight:600;font-size:17px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item .c{font-size:14px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tag{display:inline-block;font-size:12px;font-weight:600;padding:2px 8px;border-radius:99px;background:var(--panel2);color:var(--mute);margin-top:3px}
+.tag.ok{color:var(--ok);background:rgba(48,209,88,.14)}.tag.bad{color:var(--bad);background:rgba(255,69,58,.14)}
+.day{font-size:13px;font-weight:500;color:var(--mute);margin:22px 16px 7px}
+.day:first-child{margin-top:8px}
+.empty{text-align:center;padding:48px 16px;color:var(--mute);background:var(--panel);border-radius:var(--r)}
+.tabs{position:fixed;left:0;right:0;bottom:0;background:rgba(22,22,24,.72);backdrop-filter:saturate(180%) blur(24px);-webkit-backdrop-filter:saturate(180%) blur(24px);border-top:.5px solid rgba(255,255,255,.12);display:grid;grid-template-columns:repeat(4,minmax(0,1fr));padding-bottom:env(safe-area-inset-bottom);z-index:5}
+.tabs button{background:none;border:0;color:#7c7c80;font:500 11px Inter,"IBM Plex Sans Thai",sans-serif;min-height:56px;cursor:pointer;display:grid;place-items:center;gap:2px;padding:7px 4px 5px}
+.tabs button svg{width:25px;height:25px}
+.tabs button.on{color:var(--lime)}
+.sheet{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;z-index:10;align-items:flex-end;justify-content:center}
+.sheet.on{display:flex;animation:dim .2s ease}
+@keyframes dim{from{background:rgba(0,0,0,0)}}
+.sheet .body{background:#1c1c1e;width:100%;max-width:640px;max-height:92vh;overflow:auto;border-radius:14px 14px 0 0;padding:8px 16px calc(22px + env(safe-area-inset-bottom));animation:up .28s cubic-bezier(.2,.8,.2,1)}
+.sheet .body::before{content:"";display:block;width:36px;height:5px;border-radius:99px;background:#48484a;margin:0 auto 10px}
+@keyframes up{from{transform:translateY(40px);opacity:.6}}
+.head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px}
+.head h3{font-size:20px}
+.x{background:var(--panel2);border:0;color:#aeaeb2;width:30px;height:30px;border-radius:50%;font-size:18px;line-height:1;cursor:pointer;flex:none}
+.seg{display:flex;background:#2c2c2e;border-radius:9px;padding:2px;gap:2px;margin-bottom:16px}
+.seg button{flex:1;border:0;border-radius:7px;min-height:32px;background:none;color:var(--ink);font:500 14px Inter,"IBM Plex Sans Thai",sans-serif;cursor:pointer}
+.seg button.on{background:#636366;box-shadow:0 3px 8px rgba(0,0,0,.25)}
+.qr{background:#fff;border-radius:20px;padding:18px;width:min(280px,100%);margin:0 auto}
+.qr img,.qr canvas{width:100%!important;height:auto!important;display:block}
+.qrcap{text-align:center;margin:14px 0 2px;font-weight:600;font-size:20px;overflow-wrap:anywhere}
+.qrsub{text-align:center;color:var(--mute);font-size:15px;margin-bottom:14px;overflow-wrap:anywhere}
+.dl{display:grid;grid-template-columns:6.5em minmax(0,1fr);gap:0;font-size:16px;margin:14px 0;background:var(--panel2);border-radius:12px;overflow:hidden}
+.dl dt,.dl dd{padding:11px 14px;border-bottom:.5px solid var(--line);margin:0}
+.dl dt{color:var(--mute)}.dl dd{overflow-wrap:anywhere;padding-left:0}
+.dl dt:nth-last-child(2),.dl dd:last-child{border-bottom:0}
+.dl a{color:var(--lime);text-decoration:none}
+.bigimg{width:100%;border-radius:12px;display:block;background:#000}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.row>.btn{flex:1 1 140px}
+.lrow{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr) 34px;gap:8px;align-items:center}
+.lrow .x{width:30px;height:30px;font-size:16px;background:rgba(255,69,58,.18);color:var(--bad)}
+@media(max-width:480px){.lrow{grid-template-columns:minmax(0,1fr) 34px}.lrow input:nth-child(2){grid-column:1/2;grid-row:2}}
+.thumbset{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.thumbset img{height:96px;border-radius:10px;background:#fff}
+.toast{position:fixed;left:50%;top:calc(12px + env(safe-area-inset-top));transform:translateX(-50%);background:rgba(44,44,46,.9);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);color:var(--ink);padding:11px 18px;border-radius:99px;font-size:15px;font-weight:500;z-index:20;max-width:calc(100% - 32px);display:none;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+.toast.on{display:block;animation:drop .3s cubic-bezier(.2,.8,.2,1)}
+@keyframes drop{from{transform:translate(-50%,-20px);opacity:0}}
+.err{color:var(--bad);font-size:15px;margin:0 4px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><h1>Card<b>Drop</b></h1><button class="pill" id="cloudBtn" type="button" style="border:0;cursor:pointer">☁</button></div>
+
+  <!-- MY CARD -->
+  <section class="view on" id="v-me">
+    <div class="mycard" id="myCard" role="button" tabindex="0" aria-label="แตะเพื่อขยาย QR LINE และ Facebook">
+      <img id="cardImg" src="namecard.jpg" alt="นามบัตร Chuchchon Saenjaibal (Sea) CEO 360TRUCK">
+      <span class="hint">แตะเพื่อขยาย QR</span>
+    </div>
+    <button class="btn lime big" style="margin-top:18px" id="shareBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M8 7l4-4 4 4"/><path d="M6 11H5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-1"/></svg>ส่งนามบัตร</button>
+    <div class="sec">ให้คนตรงหน้าสแกน หรือกดเปิด</div>
+    <div class="links" id="links"></div>
+    <button class="btn big" style="margin-top:14px" data-go="scan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>สแกนนามบัตรคนที่เพิ่งเจอ</button>
+  </section>
+
+  <!-- SCAN -->
+  <section class="view" id="v-scan">
+    <h2 style="margin:0 4px">สแกนนามบัตร</h2>
+    <p class="muted" style="margin:6px 4px 0">ถ่ายทีละใบ หรือเลือกหลายรูปพร้อมกัน ระบบจะอ่านให้ทีละใบ แล้วคุณตรวจและบันทึกทีละคน</p>
+    <div class="two" style="margin-top:14px">
+      <label class="btn lime big" for="cam"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.5" r="3.5"/></svg>ถ่ายนามบัตร</label>
+      <label class="btn big" for="pick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="14" height="14" rx="2"/><path d="M7 3h12a2 2 0 0 1 2 2v12"/><path d="m3 16 4-4 4 4 2-2 4 4"/></svg>เลือกหลายรูป</label>
+    </div>
+    <input id="cam" type="file" accept="image/*" capture="environment" hidden>
+    <input id="pick" type="file" accept="image/*" multiple hidden>
+    <div class="queue" id="queue"></div>
+
+    <div id="editor" hidden>
+      <div class="preview"><img id="previewImg" alt="รูปนามบัตร"></div>
+      <div class="status" id="ocrStatus" hidden><span class="dot"></span><span id="ocrText"></span></div>
+      <form id="form" novalidate>
+        <div class="two">
+          <label>ชื่อ (ไทย)<input name="name_th" autocomplete="off"></label>
+          <label>ชื่อ (อังกฤษ)<input name="name_en" autocomplete="off"></label>
+        </div>
+        <div class="two">
+          <label>ตำแหน่ง<input name="title" autocomplete="off"></label>
+          <label>บริษัท<input name="company" autocomplete="off"></label>
+        </div>
+        <label>อีเมล<input name="email" type="email" inputmode="email" autocomplete="off"></label>
+        <div class="two">
+          <label>มือถือ<input name="mobile" inputmode="tel" autocomplete="off"></label>
+          <label>โทรศัพท์สำนักงาน<input name="phone" inputmode="tel" autocomplete="off"></label>
+        </div>
+        <div class="two">
+          <label>LINE ID<input name="line" autocomplete="off"></label>
+          <label>เว็บไซต์<input name="website" autocomplete="off"></label>
+        </div>
+        <label>ที่อยู่<textarea name="address" rows="2"></textarea></label>
+        <label>เจอกันที่ไหน / งานอะไร <span style="color:var(--lime)">* จำเป็น</span><input name="place" list="placeList" placeholder="เช่น งาน TILOG 2026 ไบเทค บางนา" autocomplete="off"></label>
+        <datalist id="placeList"></datalist>
+        <div class="chips" id="placeChips"></div>
+        <div class="panel locbox" id="locLine"></div>
+        <div class="selfie">
+          <label class="btn small" for="selfieIn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="9" r="3.5"/><path d="M5.5 20a6.5 6.5 0 0 1 13 0"/><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2"/></svg>ถ่ายเซลฟี่คู่กัน</label>
+          <input id="selfieIn" type="file" accept="image/*" capture="user" hidden>
+          <img id="selfieImg" alt="เซลฟี่" hidden>
+          <button type="button" class="btn ghost small" id="selfieDel" hidden>ลบเซลฟี่</button>
+        </div>
+        <label>บันทึกเพิ่มเติม<textarea name="note" rows="2" placeholder="คุยเรื่องอะไร ต้องตามต่อเรื่องไหน"></textarea></label>
+        <div class="panel" style="margin-top:4px">
+          <label class="check"><input type="checkbox" id="sendMail" checked> ส่งอีเมล "ยินดีที่ได้รู้จัก" พร้อมแนบนามบัตรผม</label>
+          <details>
+            <summary>ดู / แก้อีเมลก่อนส่ง</summary>
+            <div class="two" style="margin-top:8px">
+              <label>ภาษา<select id="mailLang"><option value="th">ไทย</option><option value="en">English</option></select></label>
+              <label>ส่งจาก<input id="mailFrom" disabled></label>
+            </div>
+            <label style="margin-top:8px">หัวข้อ<input id="mailSubj"></label>
+            <label style="margin-top:8px">ข้อความ<textarea id="mailBody" rows="12"></textarea></label>
+            <p class="muted" style="margin:6px 4px 0">แนบไฟล์: Chuchchon_360TRUCK_Namecard.jpg</p>
+          </details>
+        </div>
+        <div class="panel" style="margin-top:0">
+          <div class="muted" style="margin-bottom:8px">ข้อความแชทสำหรับคนนี้</div>
+          <div class="row" style="margin-top:0" id="formChat"><button type="button" class="btn small" data-chat="copy">คัดลอกข้อความ</button><a class="btn small" data-chat="line" href="https://line.me/R/share" target="_blank" rel="noopener">แชร์ไป LINE</a><a class="btn small" data-chat="wa" href="https://wa.me/" target="_blank" rel="noopener">WhatsApp</a></div>
+        </div>
+        <p class="err" id="formErr" hidden></p>
+        <button class="btn lime big" type="submit" id="saveBtn">บันทึก</button>
+        <button class="btn ghost" type="button" id="skipBtn">ข้ามใบนี้</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- LIST -->
+  <section class="view" id="v-list">
+    <h2 style="margin:0 4px 10px">คนที่ได้รู้จัก</h2>
+    <div class="row" style="margin:0 0 12px" id="gLinks"></div>
+    <input class="search" id="q" type="search" placeholder="ค้นหาชื่อ บริษัท หรือสถานที่" aria-label="ค้นหา">
+    <div class="list" id="list"></div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section class="view" id="v-set">
+    <h2 style="margin:0 4px">ตั้งค่า</h2>
+    <p class="muted" style="margin:6px 4px 0">ทุกช่องใส่ค่าเริ่มต้นไว้ให้แล้ว แก้แล้วกดบันทึกด้านล่าง</p>
+    <form id="setForm" novalidate>
+      <div class="panel" style="display:grid;gap:10px">
+        <h3 style="font-size:18px">ข้อมูลของผม</h3>
+        <div class="two"><label>ชื่อ (ไทย)<input data-k="nameTh"></label><label>ชื่อ (อังกฤษ)<input data-k="nameEn"></label></div>
+        <div class="two"><label>ตำแหน่ง<input data-k="title"></label><label>บริษัท<input data-k="company"></label></div>
+        <div class="two"><label>โทรศัพท์<input data-k="phone"></label><label>อีเมล (ใช้ส่ง)<input data-k="email"></label></div>
+        <div class="two"><label>LINE ID<input data-k="lineId"></label><label>ลิงก์ LINE<input data-k="lineUrl"></label></div>
+        <div class="two"><label>Facebook<input data-k="facebook"></label><label>LinkedIn<input data-k="linkedin"></label></div>
+      </div>
+      <div class="panel" style="display:grid;gap:10px">
+        <h3 style="font-size:18px">หน้านามบัตร</h3>
+        <label class="check"><input type="checkbox" data-k="showQr"> แสดง QR LINE ข้างรูปผม</label>
+        <label class="check"><input type="checkbox" data-k="showRows"> เพิ่มแถว LINE ID และ Facebook บนนามบัตร</label>
+        <label>ข้อความใต้ QR<input data-k="qrCaption"></label>
+        <div class="thumbset"><img id="setQr" alt="QR LINE ปัจจุบัน"><div style="display:grid;gap:6px"><label class="btn small" for="qrUp">เปลี่ยนรูป QR LINE</label><input id="qrUp" type="file" accept="image/*" hidden><button type="button" class="btn ghost small" id="qrReset">ใช้ QR เดิม</button></div></div>
+        <div class="thumbset"><img id="setCard" alt="รูปนามบัตรต้นแบบ"><div style="display:grid;gap:6px"><label class="btn small" for="cardUp">เปลี่ยนรูปนามบัตร</label><input id="cardUp" type="file" accept="image/*" hidden><button type="button" class="btn ghost small" id="cardReset">ใช้รูปเดิม</button></div></div>
+        <p class="muted" style="margin:0">ชื่อ เบอร์ อีเมล และ LinkedIn บนนามบัตรเป็นส่วนหนึ่งของรูป ถ้าเปลี่ยนให้อัปโหลดรูปใหม่ ถ้ารูปใหม่วางแบบต่างจากเดิม ให้ปิด QR/แถวที่ระบบเพิ่ม</p>
+      </div>
+      <div class="panel" style="display:grid;gap:8px">
+        <h3 style="font-size:18px">ลิงก์ให้คนตรงหน้าสแกน</h3>
+        <div id="linkRows" style="display:grid;gap:8px"></div>
+        <button type="button" class="btn small" id="addLink"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>เพิ่มลิงก์</button>
+      </div>
+      <div class="panel" style="display:grid;gap:10px">
+        <h3 style="font-size:18px">อีเมลยินดีที่ได้รู้จัก</h3>
+        <p class="muted" style="margin:0">ใช้ได้: {name} ชื่อเล่น/ชื่อต้น · {company} บริษัท · {place} ที่ที่เจอ · {signature} ลายเซ็น</p>
+        <label>หัวข้อ (ไทย)<input data-k="subjTh"></label>
+        <label>ข้อความ (ไทย)<textarea data-k="bodyTh" rows="8"></textarea></label>
+        <label>ลายเซ็น (ไทย)<textarea data-k="sigTh" rows="5"></textarea></label>
+        <label>Subject (English)<input data-k="subjEn"></label>
+        <label>Body (English)<textarea data-k="bodyEn" rows="8"></textarea></label>
+        <label>Signature (English)<textarea data-k="sigEn" rows="5"></textarea></label>
+        <label class="check"><input type="checkbox" data-k="mailDefault"> ติ๊กส่งอีเมลไว้ให้ทุกครั้ง</label>
+      </div>
+      <div class="panel" style="display:grid;gap:10px">
+        <h3 style="font-size:18px">ข้อความแชท (LINE / WhatsApp)</h3>
+        <p class="muted" style="margin:0">ใช้ได้: {name} {company} {place}</p>
+        <label>ข้อความ (ไทย)<textarea data-k="chatTh" rows="8"></textarea></label>
+        <label>Message (English)<textarea data-k="chatEn" rows="7"></textarea></label>
+      </div>
+      <div class="panel" style="display:grid;gap:10px">
+        <h3 style="font-size:18px">Google (Gmail · Drive · Sheet)</h3>
+        <label>บัญชีที่ใช้ส่งอีเมลและเก็บข้อมูล<input data-k="account" inputmode="email"></label>
+        <label>Google Sheet (File ID)<input data-k="sheetId"></label>
+        <label>ชื่อแท็บใน Sheet<input data-k="sheetTab"></label>
+        <label class="check"><input type="checkbox" data-k="driveOn"> เก็บรูปนามบัตรและเซลฟี่ลง Drive ทุกครั้ง</label>
+        <label class="check"><input type="checkbox" data-k="sheetOn"> เพิ่ม/อัปเดตแถวใน Google Sheet ทุกครั้งที่บันทึก</label>
+        <details><summary>ขั้นสูง</summary><label style="margin-top:8px">Google Client ID<input data-k="clientId" spellcheck="false"></label></details>
+      </div>
+      <div class="panel" style="display:grid;gap:10px">
+        <h3 style="font-size:18px">อ่านนามบัตรอัตโนมัติ</h3>
+        <p class="muted" style="margin:0">วาง API key ครั้งเดียว key เก็บในเครื่องนี้และในไฟล์ข้อมูลใน Google Drive ของคุณเท่านั้น ไม่ขึ้น GitHub</p>
+        <label>ใช้ตัวอ่าน<select data-k="ocrProvider"><option value="gemini">Google Gemini (ฟรี)</option><option value="claude">Claude API</option></select></label>
+        <label>Gemini API key (จาก aistudio.google.com)<input data-k="geminiKey" type="password" autocomplete="off" spellcheck="false" placeholder="วาง key ที่นี่"></label>
+        <label>Gemini model<input data-k="geminiModel" spellcheck="false"></label>
+        <details><summary>Claude API (ถ้าจะใช้แทน)</summary>
+        <label style="margin-top:8px">Anthropic API key<input data-k="apiKey" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-…"></label>
+        <label style="margin-top:8px">Claude model<input data-k="model" spellcheck="false"></label></details>
+        <button type="button" class="btn small" id="testKey">ทดสอบ key</button>
+        <p class="muted" id="keyMsg" style="margin:0"></p>
+      </div>
+      <p class="err" id="setErr" hidden></p>
+      <button class="btn lime big" type="submit" style="margin-top:6px">บันทึกการตั้งค่า</button>
+      <button class="btn ghost" type="button" id="setDefaults">คืนค่าเริ่มต้นทั้งหมด</button>
+    </form>
+  </section>
+</div>
+
+<nav class="tabs" aria-label="เมนู">
+  <button class="on" data-go="me"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="2" width="12" height="20" rx="2"/><circle cx="12" cy="9" r="2.5"/><path d="M9 15h6M9 18h6"/></svg>นามบัตรผม</button>
+  <button data-go="scan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3"/></svg>สแกน</button>
+  <button data-go="list"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg>รายชื่อ</button>
+  <button data-go="set"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>ตั้งค่า</button>
+</nav>
+
+<div class="sheet" id="qrSheet" role="dialog" aria-modal="true" aria-label="QR">
+  <div class="body">
+    <div class="head"><h3 style="font-size:20px" id="qrTitle">QR</h3><button class="x" data-close aria-label="ปิด">✕</button></div>
+    <div class="seg" id="qrSeg"></div>
+    <div class="qr" id="qrBox"></div>
+    <div class="qrcap" id="qrCap"></div>
+    <div class="qrsub" id="qrSub"></div>
+    <a class="btn lime" style="width:100%" id="qrOpen" target="_blank" rel="noopener">เปิดลิงก์</a>
+  </div>
+</div>
+<div class="sheet" id="shareSheet" role="dialog" aria-modal="true" aria-label="ส่งนามบัตร">
+  <div class="body">
+    <div class="head"><h3 style="font-size:20px">ส่งนามบัตร</h3><button class="x" data-close aria-label="ปิด">✕</button></div>
+    <div style="display:grid;gap:10px">
+      <button class="btn lime big" id="shNative">แชร์รูปนามบัตร</button>
+      <p class="muted" id="shNativeNote" style="margin:-4px 0 0" hidden></p>
+      <div class="two"><a class="btn" id="shLine" href="https://line.me/R/share" target="_blank" rel="noopener">ส่งลิงก์ทาง LINE</a><a class="btn" id="shWa" href="https://wa.me/" target="_blank" rel="noopener">ส่งลิงก์ทาง WhatsApp</a></div>
+      <button class="btn" id="shCopy">คัดลอกลิงก์นามบัตร</button>
+      <button class="btn" id="shSave">บันทึกรูปลงเครื่อง (แล้วแชร์จาก Gallery / Quick Share)</button>
+      <p class="muted" id="shMsg" style="margin:0"></p>
+      <img class="bigimg" id="shImg" alt="นามบัตร — กดค้างเพื่อแชร์หรือบันทึก" style="max-width:300px;margin:4px auto 0">
+      <p class="muted" style="margin:0;text-align:center">หรือกดค้างที่รูปเพื่อแชร์ / บันทึก</p>
+    </div>
+  </div>
+</div>
+<div class="sheet" id="cloudSheet" role="dialog" aria-modal="true" aria-label="Google">
+  <div class="body"><div class="head"><h3>Google</h3><button class="x" data-close aria-label="ปิด">✕</button></div><div id="cloudBody" style="display:grid;gap:12px"></div></div>
+</div>
+<div class="sheet" id="detSheet" role="dialog" aria-modal="true" aria-label="รายละเอียด"><div class="body" id="detBody"></div></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<canvas id="cv" hidden></canvas>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exifr@7.1.3/dist/lite.umd.js"></script>
+<script>
+{
+/* ================= basics ================= */
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const safeUrl = u => /^https:\/\//i.test(u || "") ? u : "";
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const toast = (m, ms = 3200) => { const t = $("#toast"); t.textContent = m; t.classList.add("on"); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove("on"), ms); };
+const FIELDS = ["name_th","name_en","title","company","email","mobile","phone","line","website","address","place","note"];
+const validEmail = e => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e || "");
+const DEF_CARD = "namecard.jpg", DEF_QR = "line-qr.png";
+
+const DEF = {
+  nameTh: "ชัชชน (Sea)", nameEn: "Chuchchon Saenjaibal (Sea)", title: "Chief Executive Officer", company: "360TRUCK & 360TECHX",
+  phone: "+66 89 892 5967", email: "chuchchon@360truck.co", lineId: "seachuchchon", lineUrl: "https://line.me/ti/p/~seachuchchon",
+  facebook: "https://www.facebook.com/chuchchon", linkedin: "https://www.linkedin.com/in/chuchchon",
+  showQr: true, showRows: true, qrCaption: "Scan to add me on LINE", qrImg: null, cardImg: null,
+  links: [
+    { label: "LINE OA @360shipper", url: "https://line.me/R/ti/p/@360shipper", icon: "OA" },
+    { label: "LINE OA @360carrier", url: "https://line.me/R/ti/p/@360carrier", icon: "OA" },
+    { label: "เว็บไซต์ 360TRUCK", url: "https://www.360truck.co", icon: "WWW" },
+    { label: "LinkedIn", url: "https://www.linkedin.com/in/chuchchon", icon: "in" },
+    { label: "360TRUCK จองรถ · Android", url: "https://play.google.com/store/apps/details?id=com.threesixtysupplychain.shipperapp", icon: "▶" },
+    { label: "360TRUCK จองรถ · iPhone", url: "https://apps.apple.com/th/app/id1630878209", icon: "iOS" },
+    { label: "360TRUCKER คนขับ · Android", url: "https://play.google.com/store/apps/details?id=com.threesixtysupplychain.TruckerApp", icon: "▶" },
+    { label: "360TRUCKER คนขับ · iPhone", url: "https://apps.apple.com/th/app/id1531420556", icon: "iOS" }
+  ],
+  subjTh: "ยินดีที่ได้รู้จักครับ — ชัชชน 360TRUCK",
+  bodyTh: "เรียน คุณ{name}\n\nยินดีที่ได้รู้จักกันที่{place}ครับ ขอบคุณที่สละเวลาพูดคุยกันวันนี้\n\nผมแนบนามบัตรมาให้ในอีเมลนี้ เผื่อสะดวกติดต่อกลับครับ หากทาง {company} มีเรื่องขนส่งที่ 360TRUCK ช่วยได้ ยินดีคุยต่อได้ทุกเมื่อครับ\n\nขอบคุณครับ\n{signature}",
+  sigTh: "ชัชชน (Sea)\nCEO | 360TRUCK & 360TECHX\nโทร 089 892 5967 | LINE: seachuchchon\nchuchchon@360truck.co | www.360truck.co\nfacebook.com/chuchchon",
+  subjEn: "Great to meet you — Sea from 360TRUCK",
+  bodyEn: "Dear {name},\n\nIt was a pleasure meeting you at {place}. Thank you for taking the time to talk.\n\nI've attached my business card so you have my details. If there's anything on the logistics side where 360TRUCK can help {company}, I'd be glad to continue the conversation anytime.\n\nBest regards,\n{signature}",
+  sigEn: "Chuchchon Saenjaibal (Sea)\nCEO | 360TRUCK & 360TECHX\nTel +66 89 892 5967 | LINE: seachuchchon\nchuchchon@360truck.co | www.360truck.co\nfacebook.com/chuchchon",
+  chatTh: "สวัสดีครับคุณ{name} ผมชัชชน (Sea) จาก 360TRUCK ยินดีที่ได้รู้จักกันที่{place}ครับ 🙏\nเก็บช่องทางติดต่อผมไว้ได้เลยครับ\n📞 089 892 5967\n💬 LINE: seachuchchon\n✉️ chuchchon@360truck.co\n🌐 https://www.360truck.co\n🚚 แอปจองรถบรรทุก 360TRUCK จองรถ: https://apps.apple.com/th/app/id1630878209 (iPhone) · https://play.google.com/store/apps/details?id=com.threesixtysupplychain.shipperapp (Android)",
+  chatEn: "Hi {name}, this is Sea (Chuchchon) from 360TRUCK. Great to meet you at {place}! 🙏\nHere's how to reach me:\n📞 +66 89 892 5967\n💬 LINE: seachuchchon\n✉️ chuchchon@360truck.co\n🌐 https://www.360truck.co",
+  mailDefault: true, driveOn: true, sheetOn: true,
+  account: "chuchchon@360truck.co", clientId: "935886786333-g79hk4e4htmqh2dggggfpd8jertf0g5g.apps.googleusercontent.com",
+  sheetId: "1q3IqRcuVLpKRvl7NJ2UxVdBZLiTUiWRqOrKTaFjjWec", sheetTab: "Namecards",
+  ocrProvider: "gemini", geminiKey: "", geminiModel: "gemini-flash-latest", apiKey: "", model: "claude-sonnet-5-5", cardLink: "", cardLinkKey: ""
+};
+const clone = o => JSON.parse(JSON.stringify(o));
+/* D = what is kept on this phone and copied to Google Drive; L = this phone only */
+let D = { cards: [], gone: {}, settings: clone(DEF), ts: 0 };
+let L = { drive: {}, dirty: false, imported: false, last: 0, rev: 0 };
+let S = D.settings;
+let drafts = [], cur = null, cardJpeg = "";
+
+/* ================= IndexedDB ================= */
+const IDB = {
+  db: null,
+  open(){ return new Promise((ok, no) => { const r = indexedDB.open("carddrop", 1); r.onupgradeneeded = () => { const d = r.result; d.createObjectStore("kv"); d.createObjectStore("blobs"); }; r.onsuccess = () => { IDB.db = r.result; ok(); }; r.onerror = () => no(r.error); }); },
+  tx(store, mode, fn){ return new Promise((ok, no) => { if (!IDB.db) return no(new Error("no db")); const t = IDB.db.transaction(store, mode), s = t.objectStore(store); const r = fn(s); t.oncomplete = () => ok(r && r.result); t.onerror = () => no(t.error); }); },
+  get(store, k){ return IDB.tx(store, "readonly", s => s.get(k)); },
+  put(store, k, v){ return IDB.tx(store, "readwrite", s => s.put(v, k)); },
+  del(store, k){ return IDB.tx(store, "readwrite", s => s.delete(k)); }
+};
+const blobGet = k => IDB.get("blobs", k).catch(() => null);
+const blobPut = (k, v) => IDB.put("blobs", k, v).catch(() => {});
+async function persist(){ D.ts = Date.now(); L.dirty = true; L.rev++; try { await IDB.put("kv", "data", D); await IDB.put("kv", "local", L); } catch {} }
+const persistLocal = () => IDB.put("kv", "local", L).catch(() => {});
+async function saveDrafts(){
+  try { await IDB.put("kv", "drafts", drafts.map(d => ({ ...d, blob: undefined, selfie: undefined, url: undefined, selfieUrl: undefined, gpsP: undefined }))); } catch {}
+}
+
+/* ================= object URLs for stored photos ================= */
+const urlCache = new Map();
+async function photoUrl(key){
+  if (urlCache.has(key)) return urlCache.get(key);
+  const b = await blobGet(key); if (!b) return "";
+  const u = URL.createObjectURL(b); urlCache.set(key, u); return u;
+}
+/* fill <img data-ph="key"> after a render */
+async function hydrate(root){
+  for (const im of (root || document).querySelectorAll("img[data-ph]")) {
+    const k = im.dataset.ph; let u = await photoUrl(k);
+    if (!u && im.dataset.drive && token()) { try { const b = await gdBlob(im.dataset.drive); await blobPut(k, b); urlCache.delete(k); u = await photoUrl(k); } catch {} }
+    if (u) im.src = u;
+  }
+}
+
+/* ================= navigation & sheets ================= */
+function go(v){ $$(".view").forEach(e => e.classList.toggle("on", e.id === "v-" + v)); $$(".tabs button").forEach(b => b.classList.toggle("on", b.dataset.go === v)); window.scrollTo(0, 0); }
+$$("[data-go]").forEach(b => b.addEventListener("click", () => go(b.dataset.go)));
+$$(".sheet").forEach(s => s.addEventListener("click", e => { if (e.target === s || e.target.closest("[data-close]")) s.classList.remove("on"); }));
+document.addEventListener("keydown", e => { if (e.key === "Escape") $$(".sheet").forEach(s => s.classList.remove("on")); });
+
+/* ================= Google sign-in ================= */
+const GD = "https://www.googleapis.com/drive/v3", GDU = "https://www.googleapis.com/upload/drive/v3", GDF = "application/vnd.google-apps.folder", ROOT_NAME = "CardDrop App";
+const SCOPES = ["https://www.googleapis.com/auth/drive.file", "https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/gmail.send"].join(" ");
+const appBase = () => location.origin + location.pathname.replace(/index\.html$/, ""); /* this page is its own redirect URI */
+function gcid(){ if (S.clientId) return S.clientId; for (const k of ["tp:gcid", "hkd26:gcid"]) { try { const v = JSON.parse(localStorage.getItem(k) || '""'); if (v) return String(v); } catch {} } return DEF.clientId; }
+function token(){ try { const t = JSON.parse(sessionStorage.getItem("cdTok") || localStorage.getItem("cdTok") || "null"); if (t && t.exp > Date.now() + 90000) return t.tok; } catch {} return ""; }
+async function signIn(){
+  stash(); await saveDrafts(); await persist();
+  const st = "card~" + uid(); try { sessionStorage.setItem("cdState", st); localStorage.setItem("cdState", st); } catch {}
+  location.href = "https://accounts.google.com/o/oauth2/v2/auth?" + new URLSearchParams({ client_id: gcid(), redirect_uri: appBase(), response_type: "token", scope: SCOPES, state: st, include_granted_scopes: "true", login_hint: S.account || "" });
+}
+let authErr = "";
+(function(){ try { const h = location.hash || ""; if (!/(access_token|error)=/.test(h)) return; const p = new URLSearchParams(h.slice(1)); history.replaceState(null, "", location.pathname);
+  const want = sessionStorage.getItem("cdState") || localStorage.getItem("cdState"); if (want !== p.get("state")) return;
+  sessionStorage.removeItem("cdState"); localStorage.removeItem("cdState");
+  if (p.get("access_token")) { const v = JSON.stringify({ tok: p.get("access_token"), exp: Date.now() + (+p.get("expires_in") || 3600) * 1000 }); sessionStorage.setItem("cdTok", v); localStorage.setItem("cdTok", v); }
+  else authErr = "เข้าสู่ระบบ Google ไม่สำเร็จ (" + (p.get("error") || "") + ")";
+} catch {} })();
+const dropToken = () => { try { sessionStorage.removeItem("cdTok"); localStorage.removeItem("cdTok"); } catch {} };
+async function g(url, opt){
+  opt = opt || {}; const tok = token(); if (!tok) throw Object.assign(new Error("ต้องเข้าสู่ระบบ Google ก่อน"), { code: "auth" });
+  for (let a = 0; a < 4; a++) {
+    let r;
+    try { r = await fetch(url, { method: opt.method || "GET", headers: Object.assign({ Authorization: "Bearer " + tok }, opt.json ? { "Content-Type": "application/json; charset=UTF-8" } : {}, opt.headers || {}), body: opt.json ? JSON.stringify(opt.json) : opt.body }); }
+    catch { if (a === 3) throw new Error("ต่อ Google ไม่ได้ ตรวจอินเทอร์เน็ต"); await sleep(1200 * (a + 1)); continue; }
+    if (r.ok) return opt.raw ? r : (r.status === 204 ? null : r.json());
+    if (opt.ok404 && r.status === 404) return null;
+    if (r.status === 401) { dropToken(); paintCloud(); throw Object.assign(new Error("การเข้าสู่ระบบ Google หมดเวลา"), { code: "auth" }); }
+    if (r.status === 429 || r.status >= 500) { await sleep(2000 * (a + 1)); continue; }
+    let m = ""; try { m = (await r.json()).error.message || ""; } catch {}
+    throw Object.assign(new Error("Google ตอบว่า " + r.status + (m ? " · " + m : "")), { code: r.status === 403 ? "forbidden" : "http" });
+  }
+  throw new Error("Google ไม่ตอบ ลองใหม่อีกครั้ง");
+}
+const enc = encodeURIComponent;
+async function gdFind(name, parent, folder){ const j = await g(`${GD}/files?q=${enc(`'${parent}' in parents and trashed=false and name='${name.replace(/'/g, "\\'")}'` + (folder ? ` and mimeType='${GDF}'` : ""))}&fields=files(id,name)&pageSize=5`); return (j.files || [])[0] || null; }
+const gdMkdir = (name, parent) => g(`${GD}/files?fields=id`, { method: "POST", json: { name, mimeType: GDF, parents: [parent] } });
+function gdUpload(blob, name, parent, mime){
+  const b = "cd" + uid(); const body = new Blob([`--${b}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify({ name, parents: [parent] })}\r\n--${b}\r\nContent-Type: ${mime}\r\n\r\n`, blob, `\r\n--${b}--`]);
+  return g(`${GDU}/files?uploadType=multipart&fields=id,webViewLink`, { method: "POST", headers: { "Content-Type": `multipart/related; boundary=${b}` }, body });
+}
+async function gdAlive(id){ const j = await g(`${GD}/files/${id}?fields=id,trashed`, { ok404: true }); return !!(j && !j.trashed); }
+async function gdBlob(id){ return (await g(`${GD}/files/${id}?alt=media`, { raw: true })).blob(); }
+async function ensureFolders(){
+  const F = L.drive;
+  if (!F.root || !(await gdAlive(F.root))) { const f = await gdFind(ROOT_NAME, "root", true) || await gdMkdir(ROOT_NAME, "root"); L.drive = { root: f.id }; }
+  const R = L.drive;
+  if (!R.photos) R.photos = (await gdFind("รูปนามบัตร", R.root, true) || await gdMkdir("รูปนามบัตร", R.root)).id;
+  if (!R.data) { const f = await gdFind("ข้อมูล.json", R.root); if (f) R.data = f.id; }
+  persistLocal();
+}
+
+/* ================= Gmail ================= */
+const b64u = s => btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+const utf8b64 = s => { const u = new TextEncoder().encode(s); let x = ""; for (let i = 0; i < u.length; i += 0x8000) x += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(x); };
+const wrap76 = s => s.replace(/.{1,76}/g, "$&\r\n");
+const htmlFrom = t => '<div style="font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:#222">' + esc(t).replace(/\n/g, "<br>") + "</div>";
+async function sendMail(to, subject, body){
+  const mix = "m" + uid(), alt = "a" + uid(), card = cardJpeg.split(",")[1];
+  const mime = [
+    `To: ${to}`, `Subject: =?UTF-8?B?${utf8b64(subject)}?=`, "MIME-Version: 1.0", `Content-Type: multipart/mixed; boundary="${mix}"`, "",
+    `--${mix}`, `Content-Type: multipart/alternative; boundary="${alt}"`, "",
+    `--${alt}`, "Content-Type: text/plain; charset=UTF-8", "Content-Transfer-Encoding: base64", "", wrap76(utf8b64(body)),
+    `--${alt}`, "Content-Type: text/html; charset=UTF-8", "Content-Transfer-Encoding: base64", "", wrap76(utf8b64(htmlFrom(body))),
+    `--${alt}--`, "",
+    `--${mix}`, 'Content-Type: image/jpeg; name="Chuchchon_360TRUCK_Namecard.jpg"', 'Content-Disposition: attachment; filename="Chuchchon_360TRUCK_Namecard.jpg"', "Content-Transfer-Encoding: base64", "", wrap76(card),
+    `--${mix}--`, ""
+  ].join("\r\n");
+  return g("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", { method: "POST", json: { raw: b64u(mime) } });
+}
+
+/* ================= Google Sheet ================= */
+const MAILTXT = { sent: "ส่งแล้ว", failed: "ส่งไม่สำเร็จ", skipped: "ไม่ได้ส่ง", queued: "รอส่ง" };
+const fmtDT = t => { const d = new Date(t), p = n => String(n).padStart(2, "0"); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`; };
+const tabRef = () => "'" + (S.sheetTab || "Namecards").replace(/'/g, "''") + "'";
+const SH = id => `https://sheets.googleapis.com/v4/spreadsheets/${enc(S.sheetId)}/values/`;
+function sheetRowOf(c){
+  const map = c.lat != null ? "https://www.google.com/maps?q=" + c.lat + "," + c.lng : "";
+  return [fmtDT(c.createdAt), c.name_th || "", c.name_en || "", c.title || "", c.company || "", c.email || "", c.mobile || "", c.phone || "", c.line || "", c.website || "", c.address || "", c.place || "",
+    c.lat ?? "", c.lng ?? "", map, c.note || "", (c.photo && c.photo.url) || "", (c.selfie && c.selfie.url) || "", MAILTXT[c.mail && c.mail.status] || "", c.id]
+    .map(v => typeof v === "string" && /^[=+\-@]/.test(v) ? "'" + v : v);
+}
+async function sheetIds(){
+  const j = await g(SH() + enc(tabRef() + "!T:T"));
+  const m = new Map(); (j.values || []).forEach((v, i) => { if (v && v[0]) m.set(v[0], i + 1); }); return m;
+}
+/* rows the old claude.ai CardDrop wrote come in as records here (once) */
+async function importSheet(){
+  const j = await g(SH() + enc(tabRef() + "!A2:T"));
+  let n = 0;
+  (j.values || []).forEach((r, i) => {
+    const id = r[19]; if (!id || D.cards.some(c => c.id === id) || D.gone[id]) return;
+    const t = Date.parse((r[0] || "").replace(" ", "T")) || Date.now();
+    const un = v => String(v || "").replace(/^'/, "");
+    D.cards.push({ id, name_th: r[1] || "", name_en: r[2] || "", title: r[3] || "", company: r[4] || "", email: r[5] || "", mobile: un(r[6]), phone: un(r[7]), line: r[8] || "", website: r[9] || "", address: r[10] || "", place: r[11] || "",
+      lat: r[12] === "" || r[12] == null ? null : +r[12], lng: r[13] === "" || r[13] == null ? null : +r[13], note: r[15] || "",
+      photo: r[16] ? { url: r[16], old: true } : null, selfie: r[17] ? { url: r[17], old: true } : null,
+      mail: { status: { "ส่งแล้ว": "sent", "ส่งไม่สำเร็จ": "failed" }[r[18]] || "skipped" }, createdAt: t, u: t, sheetRow: i + 2 });
+    n++;
+  });
+  return n;
+}
+
+/* ================= sync: phone ⇄ Drive ⇄ Gmail ⇄ Sheet ================= */
+const SY = { busy: false, err: "", msg: "", again: false };
+function merge(R){
+  if (!R || typeof R !== "object") return false; let changed = false;
+  const gone = Object.assign({}, D.gone); Object.keys(R.gone || {}).forEach(k => { if (!(gone[k] >= R.gone[k])) { gone[k] = R.gone[k]; changed = true; } });
+  const m = new Map(); D.cards.forEach(x => m.set(x.id, x));
+  (R.cards || []).forEach(x => { const o = m.get(x.id); if (!o || (x.u || 0) > (o.u || 0)) { m.set(x.id, x); changed = true; } });
+  D.cards = [...m.values()].filter(x => !(gone[x.id] >= (x.u || 0))); D.gone = gone;
+  if (R.settings && (R.settings.u || 0) > (D.settings.u || 0)) { D.settings = R.settings; S = D.settings; changed = true; }
+  return changed;
+}
+function pending(){ let n = 0; D.cards.forEach(c => { if (c.mail && c.mail.status === "queued") n++; else if ((c.photo && c.photo.local && !c.photo.d) || (c.selfie && c.selfie.local && !c.selfie.d)) n++; else if (S.sheetOn && c.sheetDirty) n++; }); return n; }
+let syncT; const syncSoon = ms => { clearTimeout(syncT); syncT = setTimeout(sync, ms == null ? 1500 : ms); };
+async function sync(){
+  if (SY.busy) { SY.again = true; return; }
+  if (!token()) { paintCloud(); return; }
+  if (navigator.onLine === false) { SY.err = "ไม่มีอินเทอร์เน็ต จะส่งต่อเมื่อออนไลน์"; paintCloud(); return; }
+  SY.busy = true; SY.err = ""; paintCloud();
+  let touched = false;
+  try {
+    SY.msg = "กำลังเชื่อม Google Drive…"; paintCloud();
+    await ensureFolders(); const F = L.drive;
+    if (F.data) { const r = await g(`${GD}/files/${F.data}?alt=media`, { raw: true, ok404: true });
+      if (r) { let R = null; try { R = JSON.parse(await r.text()); } catch {} if (R && merge(R)) { touched = true; applySettings(); renderList(); } } else { F.data = null; L.dirty = true; } }
+    if (S.sheetOn && S.sheetId && !L.imported) { SY.msg = "กำลังดึงรายชื่อเดิมจาก Sheet…"; paintCloud(); const n = await importSheet(); L.imported = true; persistLocal(); if (n) { touched = true; renderList(); } }
+    /* photos */
+    if (S.driveOn) for (const c of D.cards) for (const kind of ["photo", "selfie"]) {
+      const p = c[kind]; if (!p || !p.local || p.d) continue;
+      const b = await blobGet(c.id + ":" + kind); if (!b) { p.local = false; continue; }
+      SY.msg = "กำลังเก็บรูปลง Drive…"; paintCloud();
+      const f = await gdUpload(b, `${fmtDT(c.createdAt).slice(0, 10)} ${clean(c.name_en || c.name_th || "card")}${c.company ? " – " + clean(c.company) : ""}${kind === "selfie" ? " (selfie)" : ""}.jpg`, F.photos, "image/jpeg");
+      p.d = f.id; p.url = safeUrl(f.webViewLink) || `https://drive.google.com/file/d/${f.id}/view`; c.u = Date.now(); c.sheetDirty = true; touched = true; await persist();
+    }
+    /* emails waiting to go */
+    for (const c of D.cards) {
+      if (!c.mail || c.mail.status !== "queued") continue;
+      SY.msg = "กำลังส่งอีเมลถึง " + c.email; paintCloud();
+      await renderCard();
+      try { await sendMail(c.mail.to || c.email, c.mail.subject, c.mail.body); c.mail = { status: "sent", at: Date.now(), to: c.mail.to || c.email, subject: c.mail.subject }; toast("ส่งอีเมลถึง " + c.email + " แล้ว"); }
+      catch (e) { if (e.code === "auth") throw e; c.mail = { ...c.mail, status: "failed", err: e.message }; toast("ส่งอีเมลไม่สำเร็จ: " + e.message, 7000); }
+      c.u = Date.now(); c.sheetDirty = true; touched = true; await persist(); renderList();
+    }
+    /* sheet */
+    if (S.sheetOn && S.sheetId) {
+      const todo = D.cards.filter(c => c.sheetDirty || !c.sheetRow), goneRows = (L.goneRows || []);
+      if (todo.length || goneRows.length) {
+        SY.msg = "กำลังลง Google Sheet…"; paintCloud();
+        const ids = await sheetIds();
+        for (const c of todo.slice().sort((a, b) => a.createdAt - b.createdAt)) {
+          const row = ids.get(c.id) || 0;
+          if (row) await g(SH() + enc(`${tabRef()}!A${row}:T${row}`) + "?valueInputOption=USER_ENTERED", { method: "PUT", json: { values: [sheetRowOf(c)] } });
+          else { const j = await g(SH() + enc(`${tabRef()}!A1`) + ":append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS", { method: "POST", json: { values: [sheetRowOf(c)] } });
+            const m = String(j && j.updates && j.updates.updatedRange || "").match(/(\d+)(?::[A-Z]+\d+)?$/); c.sheetRow = m ? +m[1] : 0; if (c.sheetRow) ids.set(c.id, c.sheetRow); }
+          if (row) c.sheetRow = row; c.sheetDirty = false; touched = true;
+        }
+        for (const id of goneRows.slice()) { const row = ids.get(id); if (row) await g(SH() + enc(`${tabRef()}!S${row}`) + "?valueInputOption=RAW", { method: "PUT", json: { values: [["ลบจากแอปแล้ว"]] } }); L.goneRows = (L.goneRows || []).filter(x => x !== id); }
+        await persist();
+      }
+    }
+    /* data file */
+    if (L.dirty || !F.data || touched) {
+      SY.msg = "กำลังเก็บข้อมูล…"; paintCloud(); const rev = L.rev;
+      const blob = new Blob([JSON.stringify({ app: "carddrop", v: 1, ts: D.ts, cards: D.cards, gone: D.gone, settings: D.settings })], { type: "application/json" });
+      if (F.data) await g(`${GDU}/files/${F.data}?uploadType=media&fields=id`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: blob });
+      else F.data = (await gdUpload(blob, "ข้อมูล.json", F.root, "application/json")).id;
+      if (L.rev === rev) L.dirty = false; else SY.again = true;
+    }
+    L.last = Date.now(); persistLocal();
+  } catch (e) { SY.err = e && e.code === "auth" ? "" : (e && e.message) || String(e); }
+  finally { SY.busy = false; SY.msg = ""; paintCloud(); renderList(); if (SY.again) { SY.again = false; syncSoon(800); } }
+}
+const clean = s => String(s || "").replace(/[\\/:*?"<>|]+/g, " ").trim().slice(0, 50);
+window.addEventListener("online", () => syncSoon(500));
+document.addEventListener("visibilitychange", () => { if (!document.hidden) { paintCloud(); syncSoon(800); } });
+
+function ago(t){ if (!t) return "ยังไม่เคย"; const m = Math.round((Date.now() - t) / 6e4); return m < 1 ? "เมื่อสักครู่" : m < 60 ? m + " นาทีที่แล้ว" : m < 1440 ? Math.round(m / 60) + " ชม.ที่แล้ว" : new Date(t).toLocaleDateString("th-TH"); }
+function paintCloud(){
+  const n = pending(), btn = $("#cloudBtn"), on = !!token();
+  btn.textContent = !on ? (n ? `☁ ล็อกอิน · ${n}` : "☁ ล็อกอิน") : SY.busy ? "☁ …" : SY.err ? "☁ !" : n ? "☁ " + n : "☁ ✓";
+  btn.style.background = !on ? "var(--lime)" : ""; btn.style.color = !on ? "var(--lime-ink)" : "";
+  if (!$("#cloudSheet").classList.contains("on")) return;
+  let h = `<p class="muted" style="margin:0">ส่งอีเมล เก็บรูปลง Drive (โฟลเดอร์ <b>${ROOT_NAME}</b>) และลง Google Sheet ด้วยบัญชี <b>${esc(S.account)}</b> เครื่องนี้เก็บสำเนาไว้ ใช้ตอนไม่มีเน็ตได้</p>`;
+  if (!on) h += `<p style="margin:0"><b>${authErr ? esc(authErr) : n ? `มี ${n} รายการรอส่ง` : "ยังไม่ได้เข้าสู่ระบบ Google"}</b><br><span class="muted">การเข้าสู่ระบบอยู่ได้ 1 ชั่วโมง ระหว่างนั้นของใหม่เก็บในเครื่องก่อน</span></p><button class="btn lime big" data-act="login">เข้าสู่ระบบ Google</button>`;
+  else h += `<p style="margin:0"><b>${SY.busy ? esc(SY.msg || "กำลังส่ง…") : SY.err ? "ไม่สำเร็จ: " + esc(SY.err) : n ? `รออีก ${n} รายการ` : "ส่งครบแล้ว ✓"}</b><br><span class="muted">ล่าสุด ${esc(ago(L.last))}</span></p>
+    <div class="row" style="margin:0"><button class="btn lime" data-act="syncnow"${SY.busy ? " disabled" : ""}>ส่งเดี๋ยวนี้</button>${L.drive.root ? `<a class="btn" href="https://drive.google.com/drive/folders/${esc(L.drive.root)}" target="_blank" rel="noopener">เปิด Drive</a>` : ""}${S.sheetId ? `<a class="btn" href="https://docs.google.com/spreadsheets/d/${esc(S.sheetId)}/edit" target="_blank" rel="noopener">เปิด Sheet</a>` : ""}</div>
+    <button class="btn ghost" data-act="logout">ออกจากระบบ Google</button>`;
+  $("#cloudBody").innerHTML = h;
+}
+$("#cloudBtn").addEventListener("click", () => { $("#cloudSheet").classList.add("on"); paintCloud(); });
+$("#cloudBody").addEventListener("click", e => { const a = e.target.closest("[data-act]"); if (!a) return; if (a.dataset.act === "login") signIn(); if (a.dataset.act === "syncnow") sync(); if (a.dataset.act === "logout") { dropToken(); paintCloud(); } });
+
+/* ================= my card (canvas = what is shown, shared and emailed) ================= */
+const loadImg = src => new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = src; });
+const fbShort = u => String(u || "").replace(/^https?:\/\/(www\.)?/i, "").replace(/\/$/, "");
+function rr(x, y, w, h, r, ctx){ ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+async function setImgSrc(kind){ const u = await photoUrl("set:" + kind); return u || (kind === "qr" ? DEF_QR : DEF_CARD); }
+async function renderCard(){
+  try {
+    try { await document.fonts.load("32px Roboto"); await document.fonts.load("500 24px Roboto"); await document.fonts.load("700 24px Roboto"); } catch {}
+    const base = await loadImg(S.cardImg ? await setImgSrc("card") : DEF_CARD).catch(() => loadImg(DEF_CARD));
+    const cv = $("#cv"), W = base.naturalWidth, H = base.naturalHeight, k = W / 864, ctx = cv.getContext("2d");
+    cv.width = W; cv.height = H; ctx.drawImage(base, 0, 0);
+    if (S.showQr) {
+      const q = await loadImg(S.qrImg ? await setImgSrc("qr") : DEF_QR).catch(() => loadImg(DEF_QR));
+      ctx.fillStyle = "#fff"; rr(100 * k, 346 * k, 336 * k, 336 * k, 26 * k, ctx); ctx.fill();
+      ctx.lineWidth = 6 * k; ctx.strokeStyle = "#d7e217"; ctx.stroke();
+      ctx.drawImage(q, 118 * k, 364 * k, 300 * k, 300 * k);
+      ctx.fillStyle = "#d7e217"; ctx.font = `500 ${24 * k}px Roboto, Arial, sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillText(S.qrCaption || "", 268 * k, 712 * k, 420 * k);
+    }
+    if (S.showRows) {
+      const row = (y, kind, text) => {
+        if (!text) return;
+        ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(333 * k, y * k, 34 * k, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "#151515"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        if (kind === "line") {
+          rr(311 * k, (y - 15) * k, 44 * k, 28 * k, 9 * k, ctx); ctx.fill();
+          ctx.beginPath(); ctx.moveTo(322 * k, (y + 11) * k); ctx.lineTo(318 * k, (y + 20) * k); ctx.lineTo(330 * k, (y + 12) * k); ctx.fill();
+          ctx.fillStyle = "#fff"; ctx.font = `700 ${11 * k}px Roboto, Arial, sans-serif`; ctx.fillText("LINE", 333 * k, (y - 1) * k);
+        } else { ctx.font = `700 ${42 * k}px Roboto, Arial, sans-serif`; ctx.fillText("f", 334 * k, (y + 3) * k); }
+        ctx.fillStyle = "#fff"; ctx.textAlign = "left"; ctx.font = `400 ${31 * k}px Roboto, Arial, sans-serif`; ctx.fillText(text, 397 * k, (y + 1) * k, 440 * k);
+      };
+      row(1234, "line", S.lineId ? "LINE: " + S.lineId : "");
+      row(1318, "fb", fbShort(S.facebook));
+    }
+    cardJpeg = cv.toDataURL("image/jpeg", .88);
+    $("#cardImg").src = cardJpeg;
+  } catch { }
+}
+const cardBlob = async () => { if (!cardJpeg) await renderCard(); const b = atob(cardJpeg.split(",")[1]), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return new Blob([u], { type: "image/jpeg" }); };
+
+/* ================= QR sheet ================= */
+let qrItems = [];
+function openQR(title, items){ qrItems = items; $("#qrTitle").textContent = title; $("#qrSeg").hidden = items.length < 2; $("#qrSeg").innerHTML = items.map((it, i) => `<button type="button" data-i="${i}">${esc(it.tab)}</button>`).join(""); showQR(0); $("#qrSheet").classList.add("on"); }
+function showQR(i){
+  const it = qrItems[i]; $$("#qrSeg button").forEach((b, j) => b.classList.toggle("on", j === i));
+  const box = $("#qrBox"); box.innerHTML = "";
+  if (it.img) { const im = document.createElement("img"); im.src = it.img; im.alt = "QR " + it.tab; box.append(im); }
+  else if (window.QRCode && it.url) new QRCode(box, { text: it.url, width: 512, height: 512, correctLevel: QRCode.CorrectLevel.M });
+  $("#qrCap").textContent = it.cap || ""; $("#qrSub").textContent = it.sub || "";
+  const a = $("#qrOpen"), u = safeUrl(it.url); a.hidden = !u; if (u) a.href = u;
+}
+$("#qrSeg").addEventListener("click", e => { const b = e.target.closest("[data-i]"); if (b) showQR(+b.dataset.i); });
+async function openMe(){
+  openQR("เพิ่มเพื่อนกับ Sea", [
+    { tab: "LINE", img: S.qrImg ? await setImgSrc("qr") : DEF_QR, url: S.lineUrl, cap: "LINE ID: " + S.lineId, sub: "สแกนด้วยแอป LINE เพื่อเพิ่มเพื่อน" },
+    { tab: "Facebook", url: S.facebook, cap: S.nameEn, sub: fbShort(S.facebook) },
+    { tab: "LinkedIn", url: S.linkedin, cap: S.nameEn, sub: fbShort(S.linkedin) }
+  ].filter(x => x.url || x.img));
+}
+$("#myCard").addEventListener("click", openMe);
+$("#myCard").addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openMe(); } });
+function drawLinks(){
+  $("#links").innerHTML = S.links.filter(l => safeUrl(l.url)).map((l, i) => `<button type="button" data-l="${i}"><i>${esc(l.icon || "↗")}</i><span>${esc(l.label)}</span></button>`).join("") || '<p class="muted" style="padding:14px">ยังไม่มีลิงก์ — เพิ่มได้ที่ ตั้งค่า</p>';
+  $("#gLinks").innerHTML = (S.sheetId ? `<a class="btn" href="https://docs.google.com/spreadsheets/d/${enc(S.sheetId)}/edit" target="_blank" rel="noopener">เปิด Google Sheet</a>` : "") + (L.drive.root ? `<a class="btn" href="https://drive.google.com/drive/folders/${enc(L.drive.root)}" target="_blank" rel="noopener">เปิดโฟลเดอร์ Drive</a>` : "");
+}
+$("#links").addEventListener("click", e => { const b = e.target.closest("[data-l]"); if (!b) return; const l = S.links.filter(l => safeUrl(l.url))[+b.dataset.l]; openQR(l.label, [{ tab: l.label, url: l.url, cap: l.label, sub: l.url }]); });
+
+/* ================= send my card ================= */
+const cardKey = () => [S.cardImg, S.qrImg, S.showQr, S.showRows, S.lineId, S.facebook, S.qrCaption].join("|");
+const cardMsg = link => `นามบัตร ${S.nameEn} · ${S.company}\n${link}\nLINE: ${S.lineId} · ${S.phone}`;
+const linkReady = () => S.cardLink && S.cardLinkKey === cardKey();
+function setShareLinks(link){ const m = enc(cardMsg(link)); $("#shLine").href = "https://line.me/R/share?text=" + m; $("#shWa").href = "https://wa.me/?text=" + m; }
+async function prepLink(){
+  const msg = $("#shMsg");
+  if (linkReady()) { setShareLinks(S.cardLink); msg.textContent = "ลิงก์นามบัตร: " + S.cardLink; return S.cardLink; }
+  if (!token()) { msg.textContent = "ลิงก์นามบัตรต้องเข้าสู่ระบบ Google ก่อน (ปุ่ม ☁ มุมบน) — ปุ่มแชร์รูปด้านบนใช้ได้เลย"; return null; }
+  msg.textContent = "กำลังสร้างลิงก์นามบัตรบน Google Drive (ครั้งแรกครั้งเดียว)…";
+  try {
+    await ensureFolders();
+    const f = await gdUpload(await cardBlob(), "Namecard – " + S.nameEn + ".jpg", L.drive.root, "image/jpeg");
+    await g(`${GD}/files/${f.id}/permissions`, { method: "POST", json: { role: "reader", type: "anyone" } });
+    S.cardLink = safeUrl(f.webViewLink) || `https://drive.google.com/file/d/${f.id}/view`; S.cardLinkKey = cardKey(); S.u = Date.now(); await persist(); syncSoon();
+    setShareLinks(S.cardLink); msg.textContent = "ลิงก์นามบัตร: " + S.cardLink; return S.cardLink;
+  } catch (e) { msg.textContent = "สร้างลิงก์ไม่สำเร็จ: " + e.message; return null; }
+}
+$("#shareBtn").addEventListener("click", async () => { await renderCard(); $("#shImg").src = cardJpeg; $("#shareSheet").classList.add("on"); prepLink(); });
+["#shLine", "#shWa"].forEach(s => $(s).addEventListener("click", e => { if (!linkReady()) { e.preventDefault(); $("#shMsg").textContent = "รอสร้างลิงก์ก่อนสักครู่ แล้วกดอีกครั้ง"; } }));
+$("#shCopy").addEventListener("click", async () => { const l = await prepLink(); if (!l) return; try { await navigator.clipboard.writeText(cardMsg(l)); $("#shMsg").textContent = "คัดลอกแล้ว วางในแชทได้เลย"; } catch { $("#shMsg").textContent = "คัดลอกไม่ได้ — กดค้างที่ลิงก์ด้านบนเพื่อคัดลอก"; } });
+$("#shNative").addEventListener("click", async () => {
+  const note = $("#shNativeNote"); note.hidden = true;
+  try {
+    const file = new File([await cardBlob()], "Chuchchon_360TRUCK_Namecard.jpg", { type: "image/jpeg" });
+    if (!navigator.share || (navigator.canShare && !navigator.canShare({ files: [file] }))) throw 0;
+    await navigator.share({ files: [file], title: "นามบัตร " + S.nameEn, text: linkReady() ? cardMsg(S.cardLink) : "" });
+  } catch (e) { if (e && e.name === "AbortError") return; note.textContent = "เครื่องนี้เปิดเมนูแชร์ไม่ได้ — ใช้ “ส่งลิงก์ทาง LINE” หรือบันทึกรูปแทน"; note.hidden = false; }
+});
+$("#shSave").addEventListener("click", async () => {
+  const a = document.createElement("a"); a.href = URL.createObjectURL(await cardBlob()); a.download = "Chuchchon_360TRUCK_Namecard.jpg"; document.body.append(a); a.click(); a.remove();
+  $("#shMsg").textContent = "บันทึกแล้ว เปิด Gallery แล้วกดแชร์ → Quick Share / LINE ได้เลย";
+});
+
+/* ================= images & location ================= */
+async function shrink(file, max = 1600, q = .85){
+  let src;
+  try { src = await createImageBitmap(file, { imageOrientation: "from-image" }); } catch { src = await loadImg(URL.createObjectURL(file)); }
+  const k = Math.min(1, max / Math.max(src.width, src.height)), c = document.createElement("canvas");
+  c.width = Math.round(src.width * k); c.height = Math.round(src.height * k);
+  c.getContext("2d").drawImage(src, 0, 0, c.width, c.height);
+  return await new Promise(r => c.toBlob(r, "image/jpeg", q));
+}
+async function exifGps(file){ try { const gg = window.exifr && await exifr.gps(file); if (gg && isFinite(gg.latitude)) return [gg.latitude, gg.longitude]; } catch {} return null; }
+function deviceGps(){
+  return new Promise(r => {
+    if (!navigator.geolocation) return r(null);
+    const t = setTimeout(() => r(null), 10000);
+    try { navigator.geolocation.getCurrentPosition(p => { clearTimeout(t); r([p.coords.latitude, p.coords.longitude]); }, () => { clearTimeout(t); r(null); }, { enableHighAccuracy: true, timeout: 9000, maximumAge: 60000 }); }
+    catch { clearTimeout(t); r(null); }
+  });
+}
+
+/* ================= OCR with the Claude API (key stays on the phone / in Sea's Drive) ================= */
+const OCR_PROMPT = `You are reading a photo of a business card (Thai and/or English). Extract the details exactly as printed.
+Reply with only one JSON object with these string fields (use "" when absent):
+{"name_th":"","name_en":"","title":"","company":"","email":"","mobile":"","phone":"","line":"","website":"","address":"","lang":"th"}
+name_th = the person's name in Thai script; name_en = in Latin script. mobile = mobile number, phone = office/landline, digits as printed.
+If several emails, use the person's own. lang = "th" if the name or company is printed in Thai script, else "en".
+If the image is not a business card, return all fields "" and lang "en".`;
+async function blobB64(blob){ const b = new Uint8Array(await blob.arrayBuffer()); let s = ""; for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000)); return btoa(s); }
+async function claude(content, maxTokens){
+  if (!S.apiKey) throw { code: "nokey" };
+  const r = await fetch("https://api.anthropic.com/v1/messages", { method: "POST",
+    headers: { "content-type": "application/json", "x-api-key": S.apiKey, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
+    body: JSON.stringify({ model: S.model || DEF.model, max_tokens: maxTokens || 800, messages: [{ role: "user", content }] }) });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw { code: r.status === 401 ? "badkey" : r.status === 429 ? "rate" : r.status === 400 && /credit/i.test(JSON.stringify(j)) ? "credit" : "api", message: (j.error && j.error.message) || ("HTTP " + r.status) };
+  return (j.content || []).filter(x => x.type === "text").map(x => x.text).join("");
+}
+async function gemini(parts, json){
+  if (!S.geminiKey) throw { code: "nokey" };
+  const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${enc(S.geminiModel || DEF.geminiModel)}:generateContent`, { method: "POST",
+    headers: { "content-type": "application/json", "x-goog-api-key": S.geminiKey },
+    body: JSON.stringify({ contents: [{ role: "user", parts }], generationConfig: json ? { responseMimeType: "application/json" } : {} }) });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) { const m = (j.error && j.error.message) || ("HTTP " + r.status); throw { code: r.status === 429 ? "rate" : (r.status === 400 || r.status === 403) && /key/i.test(m) ? "badkey" : r.status === 404 ? "model" : "api", message: m }; }
+  return ((j.candidates || [])[0]?.content?.parts || []).map(p => p.text || "").join("");
+}
+async function ocr(blob){
+  const data = await blobB64(blob);
+  const t = (S.ocrProvider || "gemini") === "claude"
+    ? await claude([{ type: "image", source: { type: "base64", media_type: "image/jpeg", data } }, { type: "text", text: OCR_PROMPT }])
+    : await gemini([{ inline_data: { mime_type: "image/jpeg", data } }, { text: OCR_PROMPT }], true);
+  const m = t.match(/\{[\s\S]*\}/); return m ? JSON.parse(m[0]) : {};
+}
+let ocrBusy = false;
+async function pumpOcr(){
+  if (ocrBusy) return; const d = drafts.find(x => x.status === "waiting"); if (!d) return;
+  ocrBusy = true; d.status = "reading"; drawQueue(); if (cur === d) drawOcr();
+  try { d.ocr = await ocr(d.blob); d.status = "ready"; } catch (e) { d.status = "error"; d.err = e && e.code; d.errMsg = e && e.message; d.ocr = {}; }
+  ocrBusy = false; drawQueue(); saveDrafts();
+  if (cur === d) { fillFromOcr(d); drawOcr(); } else if (!cur) openDraft(d);
+  pumpOcr();
+}
+const OCR_ERR = { model: "ไม่พบ model นี้ — แก้ชื่อ model ในตั้งค่า", nokey: "ยังไม่ได้ใส่ API key สำหรับอ่านนามบัตร (ตั้งค่า) — กรอกเองได้", badkey: "API key ไม่ถูกต้อง — ตรวจในหน้าตั้งค่า", credit: "เครดิต Claude API หมด — เติมที่ platform.claude.com", rate: "เกินโควตาฟรีชั่วคราว รอสักครู่แล้วลองใหม่" };
+function drawOcr(){
+  const st = $("#ocrStatus"), d = cur;
+  if (!d || !d.status || d.status === "ready" || d.status === "edit") { st.hidden = true; return; }
+  st.hidden = false; st.querySelector(".dot").style.animation = d.status === "error" ? "none" : "";
+  $("#ocrText").textContent = d.status === "error" ? (OCR_ERR[d.err] || "อ่านนามบัตรไม่สำเร็จ — กรอกเองได้" + (d.errMsg ? " (" + d.errMsg + ")" : "")) : d.status === "waiting" ? "รอคิวอ่าน…" : "กำลังอ่านนามบัตร… (3–15 วินาที)";
+}
+
+/* ================= drafts / queue ================= */
+async function addFiles(files, fromCamera){
+  files = [...files].filter(f => /^image\//.test(f.type) || !f.type); if (!files.length) return;
+  const devPos = fromCamera ? deviceGps() : null;
+  go("scan");
+  for (const f of files) {
+    const d = { id: "d" + uid(), status: "waiting", ocr: null, gps: null, locOk: null };
+    drafts.push(d);
+    exifGps(f).then(async gg => { d.gps = gg || (devPos ? await devPos : null); d.gSrc = gg ? "จากรูป" : "จากเครื่อง"; if (!d.gps) d.locOk = false; if (cur === d) drawLoc(); saveDrafts(); });
+    d.blob = await shrink(f); d.url = URL.createObjectURL(d.blob); await blobPut("draft:" + d.id, d.blob);
+  }
+  saveDrafts(); drawQueue();
+  if (!cur) openDraft(drafts.find(x => x.status !== "saved"));
+  pumpOcr();
+}
+$("#cam").addEventListener("change", e => { addFiles(e.target.files, true); e.target.value = ""; });
+$("#pick").addEventListener("change", e => { addFiles(e.target.files, false); e.target.value = ""; });
+function draftName(d){ const o = d.form || d.ocr || {}; return o.name_th || o.name_en || o.company || ""; }
+function drawQueue(){
+  const q = $("#queue");
+  if (drafts.length < 2 && !(drafts.length === 1 && cur !== drafts[0])) { q.innerHTML = ""; return; }
+  q.innerHTML = `<div class="muted">รอตรวจ ${drafts.length} ใบ</div>` + drafts.map(d => `<button type="button" class="qitem ${cur === d ? "on" : ""}" data-d="${d.id}"><img src="${d.url || ""}" alt=""><div><b>${esc(draftName(d) || "นามบัตร")}</b><span class="muted">${{ waiting: "รอคิวอ่าน", reading: "กำลังอ่าน…", ready: "พร้อมตรวจ", error: "อ่านไม่ได้ กรอกเอง" }[d.status] || ""}</span></div><span class="muted">›</span></button>`).join("");
+}
+$("#queue").addEventListener("click", e => { const b = e.target.closest("[data-d]"); if (!b) return; stash(); openDraft(drafts.find(d => d.id === b.dataset.d)); });
+function stash(){ if (cur && cur.status !== "edit") { cur.form = readForm(); cur.mail = { lang: $("#mailLang").value, subj: $("#mailSubj").value, body: $("#mailBody").value, on: $("#sendMail").checked, touched: $("#mailBody").dataset.touched }; saveDrafts(); } }
+function readForm(){ const f = $("#form"), r = {}; FIELDS.forEach(k => r[k] = f[k].value.trim()); return r; }
+let sessionPlace = { day: "", v: "" };
+function todayPlace(){ const today = new Date().toDateString(); const c = [...D.cards].sort((a, b) => b.createdAt - a.createdAt).find(c => c.place && new Date(c.createdAt).toDateString() === today); return c ? c.place : (sessionPlace.day === today ? sessionPlace.v : ""); }
+function openDraft(d){
+  cur = d || null; $("#formErr").hidden = true;
+  if (!d) { $("#editor").hidden = true; drawQueue(); return; }
+  $("#editor").hidden = false; const f = $("#form"); f.reset();
+  $("#previewImg").removeAttribute("src");
+  if (d.url) $("#previewImg").src = d.url; else if (d.photoKey) photoUrl(d.photoKey).then(u => { if (u) $("#previewImg").src = u; });
+  if (d.form) FIELDS.forEach(k => f[k].value = d.form[k] || "");
+  else { if (d.ocr) fillFromOcr(d, true); f.place.value = todayPlace(); }
+  if (d.mail) { $("#mailLang").value = d.mail.lang; $("#sendMail").checked = d.mail.on; $("#mailSubj").value = d.mail.subj; $("#mailBody").value = d.mail.body; $("#mailBody").dataset.touched = d.mail.touched || ""; }
+  else { $("#sendMail").checked = d.status !== "edit" && S.mailDefault; $("#mailLang").value = (d.ocr && d.ocr.lang === "en") ? "en" : "th"; fillMail(); }
+  if (d.status === "edit" && !d.mail) fillMail();
+  drawSelfie(); drawLoc(); drawOcr(); drawQueue(); drawPlaces();
+}
+function fillFromOcr(d, quiet){
+  const f = $("#form"), r = d.ocr || {};
+  for (const k of FIELDS) if (k !== "place" && k !== "note" && typeof r[k] === "string" && !f[k].value) f[k].value = r[k].trim();
+  if (r.lang) $("#mailLang").value = r.lang === "en" ? "en" : "th";
+  if (!$("#mailBody").dataset.touched) fillMail();
+  if (!quiet) toast(r.email || r.name_th || r.name_en ? "อ่านนามบัตรแล้ว ตรวจแล้วกดบันทึก" : "อ่านได้ไม่ครบ ช่วยกรอกเพิ่ม");
+}
+
+/* ================= location confirm ================= */
+function drawLoc(){
+  const el = $("#locLine"), c = cur; el.textContent = ""; if (!c) return;
+  el.classList.toggle("need", !!c.gps && c.locOk === null);
+  const line = document.createElement("div");
+  if (!c.gps) { line.className = "muted"; line.textContent = c.locOk === false ? "ไม่มีตำแหน่ง GPS — จะเก็บเฉพาะ “เจอกันที่ไหน”" : "ตำแหน่ง GPS: กำลังหา…"; el.append(line); return; }
+  const coord = c.gps[0].toFixed(5) + ", " + c.gps[1].toFixed(5);
+  const a = document.createElement("a"); a.href = "https://www.google.com/maps?q=" + c.gps[0] + "," + c.gps[1]; a.target = "_blank"; a.rel = "noopener"; a.textContent = "เปิดดูในแผนที่ก่อน";
+  if (c.locOk === null) {
+    line.textContent = "📍 พบตำแหน่ง " + coord + " (" + (c.gSrc || "") + ") — ใช่ที่ที่เจอกันไหม?";
+    const row = document.createElement("div"); row.className = "row"; row.style.marginTop = "0";
+    const y = document.createElement("button"); y.type = "button"; y.className = "btn lime"; y.textContent = "ใช่ บันทึกตำแหน่งนี้"; y.onclick = () => { c.locOk = true; drawLoc(); saveDrafts(); };
+    const n = document.createElement("button"); n.type = "button"; n.className = "btn"; n.textContent = "ไม่ใช่ ไม่ต้องเก็บ"; n.onclick = () => { c.locOk = false; drawLoc(); saveDrafts(); };
+    row.append(y, n); el.append(line, a, row);
+  } else {
+    line.className = c.locOk ? "ok" : "no"; line.textContent = c.locOk ? "✓ จะบันทึกตำแหน่ง " + coord : "ไม่เก็บตำแหน่ง GPS";
+    const ch = document.createElement("button"); ch.type = "button"; ch.className = "btn small"; ch.textContent = "เปลี่ยน"; ch.onclick = () => { c.locOk = null; drawLoc(); };
+    el.append(line, a, ch);
+  }
+}
+function drawPlaces(){
+  const seen = [...new Set([...D.cards].sort((a, b) => b.createdAt - a.createdAt).map(c => (c.place || "").trim()).filter(Boolean))].slice(0, 6);
+  $("#placeList").innerHTML = seen.map(p => `<option value="${esc(p)}"></option>`).join("");
+  $("#placeChips").innerHTML = seen.map(p => `<button type="button" data-p="${esc(p)}">${esc(p)}</button>`).join("");
+}
+$("#placeChips").addEventListener("click", e => { const b = e.target.closest("[data-p]"); if (!b) return; $("#form").place.value = b.dataset.p; if (!$("#mailBody").dataset.touched) fillMail(); });
+
+/* ================= selfie ================= */
+function drawSelfie(){
+  const has = cur && (cur.selfieUrl || cur.selfieKey);
+  $("#selfieImg").hidden = !has; $("#selfieDel").hidden = !has;
+  if (cur && cur.selfieUrl) $("#selfieImg").src = cur.selfieUrl; else if (cur && cur.selfieKey) photoUrl(cur.selfieKey).then(u => { if (u) $("#selfieImg").src = u; });
+}
+$("#selfieIn").addEventListener("change", async e => { const f = e.target.files[0]; e.target.value = ""; if (!f || !cur) return; cur.selfie = await shrink(f, 1400, .85); cur.selfieUrl = URL.createObjectURL(cur.selfie); cur.selfieKey = null; await blobPut("draftself:" + cur.id, cur.selfie); saveDrafts(); drawSelfie(); });
+$("#selfieDel").addEventListener("click", () => { if (!cur) return; cur.selfie = null; cur.selfieUrl = null; cur.selfieKey = null; cur.selfieRemoved = true; drawSelfie(); });
+
+/* ================= email text & chat text ================= */
+function firstName(s){ return String(s || "").replace(/^(คุณ|นาย|นางสาว|นาง|ดร\.|Mr\.?|Mrs\.?|Ms\.?|Dr\.?)\s*/i, "").trim().split(/\s+/)[0] || ""; }
+function fillMail(){
+  const f = $("#form"), en = $("#mailLang").value === "en";
+  const name = en ? (firstName(f.name_en.value) || firstName(f.name_th.value) || "there") : (firstName(f.name_th.value) || firstName(f.name_en.value));
+  const company = f.company.value.trim() || (en ? "your team" : "บริษัทของคุณ"), place = f.place.value.trim().replace(/^ที่\s*/, "") || (en ? "the event" : "งาน");
+  const fill = t => String(t || "").replaceAll("{name}", name).replaceAll("{company}", company).replaceAll("{place}", place).replaceAll("{signature}", en ? S.sigEn : S.sigTh);
+  $("#mailSubj").value = fill(en ? S.subjEn : S.subjTh); $("#mailBody").value = fill(en ? S.bodyEn : S.bodyTh); $("#mailBody").dataset.touched = "";
+}
+$("#mailLang").addEventListener("change", fillMail);
+["#mailBody", "#mailSubj"].forEach(s => $(s).addEventListener("input", () => $("#mailBody").dataset.touched = "1"));
+["name_th","name_en","company","place"].forEach(k => $("#form")[k].addEventListener("change", () => { if (!$("#mailBody").dataset.touched) fillMail(); }));
+function chatText(c){
+  const en = !/[฀-๿]/.test((c.name_th || "") + (c.company || "")) && !!(c.name_en || c.company);
+  const name = en ? (firstName(c.name_en) || firstName(c.name_th) || "there") : (firstName(c.name_th) || firstName(c.name_en));
+  const place = String(c.place || "").replace(/^ที่\s*/, "") || (en ? "the event" : "งาน"), company = c.company || (en ? "your team" : "บริษัทของคุณ");
+  return String(en ? S.chatEn : S.chatTh).replaceAll("{name}", name).replaceAll("{place}", place).replaceAll("{company}", company);
+}
+function waNumber(c){ let n = String(c.mobile || c.phone || "").replace(/[^\d+]/g, ""); if (!n) return ""; if (n.startsWith("+")) return n.slice(1); if (n.startsWith("00")) return n.slice(2); if (n.startsWith("0")) return "66" + n.slice(1); return n; }
+function chatHref(kind, c){ const t = enc(chatText(c)); return kind === "line" ? "https://line.me/R/share?text=" + t : "https://wa.me/" + waNumber(c) + "?text=" + t; }
+async function copyChat(c, msgEl){ try { await navigator.clipboard.writeText(chatText(c)); (msgEl ? (msgEl.textContent = "คัดลอกข้อความแล้ว วางในแชทได้เลย") : toast("คัดลอกข้อความแล้ว วางในแชทได้เลย")); } catch { toast("คัดลอกไม่ได้"); } }
+$("#formChat").addEventListener("click", e => { const b = e.target.closest("[data-chat]"); if (!b) return; if (b.dataset.chat === "copy") copyChat(readForm()); else b.href = chatHref(b.dataset.chat, readForm()); });
+
+/* ================= save ================= */
+$("#form").addEventListener("submit", async e => {
+  e.preventDefault(); if (!cur) return;
+  const err = $("#formErr"), fail = m => { err.textContent = m; err.hidden = false; toast(m, 6000); }; err.hidden = true;
+  const rec = readForm(), d = cur, isEdit = d.status === "edit";
+  if (!rec.name_th && !rec.name_en && !rec.company) return fail("ใส่ชื่อหรือบริษัทอย่างน้อยหนึ่งช่อง");
+  if (!rec.place) { $("#form").place.focus(); return fail("ใส่ว่าเจอกันที่ไหน / งานอะไร ก่อนบันทึก"); }
+  if (d.gps && d.locOk === null) { $("#locLine").scrollIntoView({ block: "center" }); return fail("ยืนยันตำแหน่ง GPS ก่อน — กด “ใช่” หรือ “ไม่ใช่”"); }
+  const wantMail = $("#sendMail").checked;
+  if (wantMail && !validEmail(rec.email)) return fail("อีเมลผู้รับดูไม่ถูกต้อง — แก้อีเมล หรือปิดสวิตช์ส่งอีเมล");
+  const btn = $("#saveBtn"); btn.disabled = true; btn.textContent = "กำลังบันทึก…";
+  try {
+    const base = isEdit ? (D.cards.find(c => c.id === d.docId) || {}) : {};
+    const id = d.docId || ("c" + uid());
+    const c = { ...base, ...rec, id, lat: d.gps && d.locOk ? d.gps[0] : null, lng: d.gps && d.locOk ? d.gps[1] : null, createdAt: base.createdAt || Date.now(), u: Date.now(), sheetDirty: true };
+    if (d.blob) { await blobPut(id + ":photo", d.blob); urlCache.delete(id + ":photo"); c.photo = { local: true }; }
+    if (d.selfie) { await blobPut(id + ":selfie", d.selfie); urlCache.delete(id + ":selfie"); c.selfie = { local: true }; }
+    else if (d.selfieRemoved) c.selfie = null;
+    if (wantMail) c.mail = { status: "queued", to: rec.email, subject: $("#mailSubj").value.trim(), body: $("#mailBody").value };
+    else if (!base.mail) c.mail = { status: "skipped" };
+    const i = D.cards.findIndex(x => x.id === id); if (i >= 0) D.cards[i] = c; else D.cards.push(c);
+    await persist();
+    blobPut("draft:" + d.id, null); IDB.del("blobs", "draft:" + d.id).catch(() => {}); IDB.del("blobs", "draftself:" + d.id).catch(() => {});
+    sessionPlace = { day: new Date().toDateString(), v: rec.place };
+    drafts = drafts.filter(x => x !== d); saveDrafts();
+    renderList(); drawPlaces();
+    toast((isEdit ? "แก้ไขเรียบร้อย" : "บันทึกเรียบร้อย") + (wantMail ? (token() ? " · กำลังส่งอีเมล…" : " · อีเมลจะส่งเมื่อเข้าสู่ระบบ Google") : ""), 4500);
+    const next = drafts.find(x => x.status === "ready" || x.status === "error") || drafts[0];
+    if (next) openDraft(next); else { openDraft(null); go("list"); }
+    syncSoon(300);
+  } catch { fail("บันทึกไม่สำเร็จ ลองอีกครั้ง"); }
+  finally { btn.disabled = false; btn.textContent = "บันทึก"; }
+});
+$("#skipBtn").addEventListener("click", () => { if (!cur) return; const d = cur; drafts = drafts.filter(x => x !== d); saveDrafts(); IDB.del("blobs", "draft:" + d.id).catch(() => {}); openDraft(drafts.find(x => x.status === "ready") || drafts[0]); });
+
+/* ================= list ================= */
+const nameOf = c => c.name_th || c.name_en || c.company || "ไม่มีชื่อ";
+const dateOf = t => t ? new Date(t).toLocaleDateString("th-TH", { weekday: "short", day: "numeric", month: "short", year: "2-digit" }) : "";
+function mailTag(m){
+  if (!m || m.status === "skipped") return '<span class="tag">ไม่ได้ส่งอีเมล</span>';
+  if (m.status === "sent") return '<span class="tag ok">ส่งอีเมลแล้ว</span>';
+  if (m.status === "failed") return '<span class="tag bad">ส่งอีเมลไม่สำเร็จ</span>';
+  return '<span class="tag">รอส่งอีเมล</span>';
+}
+const thumb = c => c.photo ? `<img data-ph="${esc(c.id)}:photo" ${c.photo.d ? `data-drive="${esc(c.photo.d)}"` : ""} alt="" loading="lazy">` : `<img alt="">`;
+function renderList(){
+  $("#countPill") && ($("#countPill").textContent = D.cards.length + " คน");
+  const q = $("#q").value.trim().toLowerCase();
+  const rows = [...D.cards].sort((a, b) => b.createdAt - a.createdAt).filter(c => !q || FIELDS.some(k => String(c[k] || "").toLowerCase().includes(q)));
+  if (!rows.length) { $("#list").innerHTML = `<div class="empty">${D.cards.length ? "ไม่พบรายชื่อที่ค้นหา" : "ยังไม่มีนามบัตร<br>กด “สแกน” ด้านล่างเพื่อเริ่ม"}</div>`; return; }
+  let last = "", out = "";
+  for (const c of rows) {
+    const day = dateOf(c.createdAt); if (day !== last) { out += `<div class="day">${esc(day)} · ${rows.filter(x => dateOf(x.createdAt) === day).length} คน</div>`; last = day; }
+    out += `<button class="item" data-id="${esc(c.id)}">${thumb(c)}<div><div class="n">${esc(nameOf(c))}</div><div class="c">${esc([c.title, c.company].filter(Boolean).join(" · "))}</div><div class="c">${esc(c.place || "-")}</div>${mailTag(c.mail)}</div></button>`;
+  }
+  $("#list").innerHTML = out; hydrate($("#list"));
+  paintCloud();
+}
+$("#q").addEventListener("input", renderList);
+$("#list").addEventListener("click", e => { const b = e.target.closest(".item"); if (b) openDetail(b.dataset.id); });
+function openDetail(id){
+  const c = D.cards.find(x => x.id === id); if (!c) return;
+  const rows = [["ตำแหน่ง", c.title], ["บริษัท", c.company], ["อีเมล", c.email], ["มือถือ", c.mobile], ["สำนักงาน", c.phone], ["LINE", c.line], ["เว็บไซต์", c.website], ["ที่อยู่", c.address], ["เจอที่", c.place], ["บันทึก", c.note], ["วันที่", dateOf(c.createdAt)]].filter(r => r[1]);
+  const web = safeUrl(c.website) || (c.website && !/^\w+:/.test(c.website) ? "https://" + c.website.replace(/^\/+/, "") : "");
+  const tel = String(c.mobile || c.phone || "").replace(/[^\d+]/g, "");
+  $("#detBody").innerHTML = `<div class="head"><h3 style="font-size:22px">${esc(nameOf(c))}</h3><button class="x" data-close aria-label="ปิด">✕</button></div>
+    ${c.name_th && c.name_en ? `<p class="muted" style="margin:-6px 0 10px">${esc(c.name_en)}</p>` : ""}
+    ${c.photo ? `<img class="bigimg" data-ph="${esc(c.id)}:photo" ${c.photo.d ? `data-drive="${esc(c.photo.d)}"` : ""} alt="รูปนามบัตร">` : ""}
+    ${c.photo && c.photo.old && safeUrl(c.photo.url) ? `<a class="btn small" style="margin-top:8px" href="${esc(c.photo.url)}" target="_blank" rel="noopener">เปิดรูปนามบัตรใน Drive</a>` : ""}
+    ${c.selfie ? `<img class="bigimg" style="margin-top:8px" data-ph="${esc(c.id)}:selfie" ${c.selfie.d ? `data-drive="${esc(c.selfie.d)}"` : ""} alt="เซลฟี่">` : ""}
+    <div class="row">${tel ? `<a class="btn" href="tel:${esc(tel)}">โทร</a>` : ""}${validEmail(c.email) ? `<a class="btn" href="mailto:${esc(c.email)}">อีเมล</a>` : ""}</div>
+    <dl class="dl">${rows.map(r => `<dt>${esc(r[0])}</dt><dd>${esc(r[1])}</dd>`).join("")}
+    ${c.lat != null ? `<dt>พิกัด</dt><dd><a href="https://www.google.com/maps?q=${Number(c.lat)},${Number(c.lng)}" target="_blank" rel="noopener">${Number(c.lat).toFixed(5)}, ${Number(c.lng).toFixed(5)} · ดูแผนที่</a></dd>` : ""}
+    ${web ? `<dt>ลิงก์</dt><dd><a href="${esc(web)}" target="_blank" rel="noopener">เปิดเว็บไซต์</a></dd>` : ""}
+    <dt>อีเมล</dt><dd>${mailTag(c.mail)}${c.mail && c.mail.at ? " " + esc(new Date(c.mail.at).toLocaleString("th-TH")) : ""}</dd></dl>
+    <div class="row">${validEmail(c.email) ? `<button class="btn lime" data-act="mail">${c.mail && c.mail.status === "sent" ? "ส่งอีเมลอีกครั้ง" : c.mail && c.mail.status === "queued" ? "รอส่งอยู่ · ส่งเดี๋ยวนี้" : "ส่งอีเมลยินดีที่ได้รู้จัก"}</button>` : ""}</div>
+    <div class="row"><button class="btn" data-act="chat">คัดลอกข้อความแชท</button><a class="btn" href="${esc(chatHref("line", c))}" target="_blank" rel="noopener">แชร์ไป LINE</a><a class="btn" href="${esc(chatHref("wa", c))}" target="_blank" rel="noopener">WhatsApp${waNumber(c) ? "" : " (เลือกผู้รับเอง)"}</a></div>
+    <div class="row"><button class="btn" data-act="copy">คัดลอกข้อมูลติดต่อ</button><button class="btn" data-act="edit">แก้ไข</button><button class="btn ghost" data-act="del" style="color:var(--bad)">ลบ</button></div>
+    <p class="muted" id="detMsg" style="margin-top:10px"></p>`;
+  $("#detSheet").classList.add("on"); hydrate($("#detBody"));
+  $("#detBody").onclick = async e => {
+    const a = e.target.closest("[data-act]"); if (!a) return; const msg = $("#detMsg");
+    if (a.dataset.act === "chat") return copyChat(c, msg);
+    if (a.dataset.act === "copy") {
+      const t = [nameOf(c), c.name_th && c.name_en ? c.name_en : "", c.title, c.company, c.email, c.mobile, c.phone, c.line && "LINE: " + c.line, c.website, c.address].filter(Boolean).join("\n");
+      try { await navigator.clipboard.writeText(t); msg.textContent = "คัดลอกแล้ว"; } catch { msg.textContent = "คัดลอกไม่ได้"; }
+    }
+    if (a.dataset.act === "edit") {
+      $("#detSheet").classList.remove("on"); stash(); go("scan");
+      openDraft({ id: "e" + c.id, status: "edit", docId: c.id, photoKey: c.photo ? c.id + ":photo" : null, selfieKey: c.selfie ? c.id + ":selfie" : null,
+        gps: c.lat != null ? [c.lat, c.lng] : null, gSrc: "เดิม", locOk: c.lat != null ? true : false, form: Object.fromEntries(FIELDS.map(k => [k, c[k] || ""])) });
+    }
+    if (a.dataset.act === "del") {
+      if (a.dataset.sure !== "1") { a.dataset.sure = "1"; a.textContent = "แตะอีกครั้งเพื่อยืนยันลบ"; return; }
+      D.cards = D.cards.filter(x => x.id !== c.id); D.gone[c.id] = Date.now(); L.goneRows = [...(L.goneRows || []), c.id];
+      await persist(); IDB.del("blobs", c.id + ":photo").catch(() => {}); IDB.del("blobs", c.id + ":selfie").catch(() => {});
+      $("#detSheet").classList.remove("on"); renderList(); toast("ลบแล้ว (รูปใน Google Drive ยังอยู่)"); syncSoon();
+    }
+    if (a.dataset.act === "mail") {
+      const f = $("#form"), saved = readForm(), keep = { l: $("#mailLang").value, s: $("#mailSubj").value, b: $("#mailBody").value, t: $("#mailBody").dataset.touched };
+      FIELDS.forEach(k => f[k].value = c[k] || ""); $("#mailLang").value = /[฀-๿]/.test((c.name_th || "") + (c.company || "")) ? "th" : "en"; fillMail();
+      const subject = (c.mail && c.mail.subject) || $("#mailSubj").value, body = (c.mail && c.mail.body) || $("#mailBody").value;
+      FIELDS.forEach(k => f[k].value = saved[k]); $("#mailLang").value = keep.l; $("#mailSubj").value = keep.s; $("#mailBody").value = keep.b; $("#mailBody").dataset.touched = keep.t || "";
+      c.mail = { status: "queued", to: c.email, subject, body }; c.u = Date.now(); c.sheetDirty = true; await persist();
+      if (!token()) { msg.textContent = "จะส่งเมื่อเข้าสู่ระบบ Google (ปุ่ม ☁ มุมบน)"; renderList(); return; }
+      msg.textContent = "กำลังส่ง…"; await sync(); openDetail(c.id);
+    }
+  };
+}
+
+/* ================= settings ================= */
+let pendQr, pendCard;
+function fillSettings(){
+  $$("#setForm [data-k]").forEach(el => { const v = S[el.dataset.k]; if (el.type === "checkbox") el.checked = !!v; else el.value = v ?? ""; });
+  $("#linkRows").innerHTML = S.links.map(l => linkRow(l)).join("");
+  pendQr = S.qrImg; pendCard = S.cardImg;
+  setImgSrc("qr").then(u => $("#setQr").src = S.qrImg ? u : DEF_QR); setImgSrc("card").then(u => $("#setCard").src = S.cardImg ? u : DEF_CARD);
+}
+const linkRow = (l = {}) => `<div class="lrow" data-icon="${esc(l.icon || "")}"><input placeholder="ชื่อปุ่ม" value="${esc(l.label || "")}"><input placeholder="https://…" inputmode="url" value="${esc(l.url || "")}"><button type="button" class="x" data-rm aria-label="ลบลิงก์">✕</button></div>`;
+$("#addLink").addEventListener("click", () => $("#linkRows").insertAdjacentHTML("beforeend", linkRow()));
+$("#linkRows").addEventListener("click", e => { const b = e.target.closest("[data-rm]"); if (b) b.parentElement.remove(); });
+$("#qrUp").addEventListener("change", async e => { const f = e.target.files[0]; e.target.value = ""; if (!f) return; const b = await shrink(f, 1000, .92); await blobPut("set:qr", b); urlCache.delete("set:qr"); pendQr = "local"; $("#setQr").src = await photoUrl("set:qr"); });
+$("#cardUp").addEventListener("change", async e => { const f = e.target.files[0]; e.target.value = ""; if (!f) return; const b = await shrink(f, 1800, .92); await blobPut("set:card", b); urlCache.delete("set:card"); pendCard = "local"; $("#setCard").src = await photoUrl("set:card"); });
+$("#qrReset").addEventListener("click", () => { pendQr = null; $("#setQr").src = DEF_QR; });
+$("#cardReset").addEventListener("click", () => { pendCard = null; $("#setCard").src = DEF_CARD; });
+$("#setDefaults").addEventListener("click", e => { const b = e.currentTarget; if (b.dataset.sure !== "1") { b.dataset.sure = "1"; b.textContent = "แตะอีกครั้งเพื่อยืนยัน"; return; } b.dataset.sure = ""; b.textContent = "คืนค่าเริ่มต้นทั้งหมด"; const k = [S.apiKey, S.geminiKey]; S = clone(DEF); [S.apiKey, S.geminiKey] = k; fillSettings(); toast("คืนค่าเริ่มต้นแล้ว กดบันทึกเพื่อใช้"); });
+$("#setForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const n = clone(S);
+  $$("#setForm [data-k]").forEach(el => n[el.dataset.k] = el.type === "checkbox" ? el.checked : el.value.trim());
+  n.links = $$("#linkRows .lrow").map(r => { const [a, b] = r.querySelectorAll("input"); return { label: a.value.trim(), url: b.value.trim(), icon: r.dataset.icon || "↗" }; }).filter(l => l.label && l.url);
+  const bad = n.links.find(l => !safeUrl(l.url)); if (bad) { $("#setErr").textContent = "ลิงก์ “" + bad.label + "” ต้องขึ้นต้นด้วย https://"; $("#setErr").hidden = false; return; }
+  $("#setErr").hidden = true; n.qrImg = pendQr || null; n.cardImg = pendCard || null; n.u = Date.now();
+  D.settings = n; S = n; await persist(); applySettings(); toast("บันทึกการตั้งค่าแล้ว"); syncSoon();
+});
+$("#testKey").addEventListener("click", async () => {
+  const el = $("#keyMsg"), v = k => $(`#setForm [data-k="${k}"]`).value.trim();
+  const keep = clone(S); Object.assign(S, { ocrProvider: v("ocrProvider"), geminiKey: v("geminiKey"), geminiModel: v("geminiModel") || DEF.geminiModel, apiKey: v("apiKey"), model: v("model") || DEF.model });
+  el.textContent = "กำลังทดสอบ…";
+  try { const t = S.ocrProvider === "claude" ? await claude([{ type: "text", text: "Reply with the single word: OK" }], 10) : await gemini([{ text: "Reply with the single word: OK" }], false);
+    el.textContent = "ใช้ได้ ✓ (" + t.trim().slice(0, 20) + ") — กดบันทึกการตั้งค่าด้านล่าง"; }
+  catch (x) { el.textContent = (OCR_ERR[x.code] || "ใช้ไม่ได้") + (x.message ? " · " + x.message : ""); }
+  Object.assign(S, keep);
+});
+function applySettings(){ fillSettings(); drawLinks(); renderCard(); $("#mailFrom").value = S.account || S.email; paintCloud(); }
+
+/* ================= boot ================= */
+(async () => {
+  try { await IDB.open(); } catch { toast("เครื่องนี้เก็บข้อมูลไม่ได้ (โหมดไม่ระบุตัวตน?)", 6000); }
+  try {
+    const d = await IDB.get("kv", "data"); if (d) { D = d; D.settings = { ...clone(DEF), ...(d.settings || {}) }; S = D.settings; }
+    const l = await IDB.get("kv", "local"); if (l) L = Object.assign(L, l, { rev: 0 });
+    const ds = await IDB.get("kv", "drafts");
+    if (ds && ds.length) for (const x of ds) { const b = await blobGet("draft:" + x.id); if (!b) continue; const sb = await blobGet("draftself:" + x.id);
+      drafts.push({ ...x, blob: b, url: URL.createObjectURL(b), selfie: sb || null, selfieUrl: sb ? URL.createObjectURL(sb) : null, status: x.status === "reading" ? "waiting" : x.status }); }
+  } catch {}
+  applySettings(); renderList(); drawPlaces();
+  if (drafts.length) { go("scan"); openDraft(drafts[0]); pumpOcr(); }
+  if (authErr) toast(authErr, 6000);
+  if (token()) sync();
+  if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+})();
+}
+
+</script>
+</body>
+</html>
