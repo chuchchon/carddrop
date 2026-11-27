@@ -227,6 +227,15 @@ form{display:block;margin-top:6px}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 
 [hidden]{display:none!important}
+.ptools{display:flex;justify-content:center;gap:22px;margin-top:10px}
+.ptools .link-btn{font-size:15px}
+.ptools .link-btn svg{width:19px;height:19px}
+.cropbox{position:relative;margin:0 auto;max-width:100%;touch-action:none;user-select:none;-webkit-user-select:none}
+.cropbox img{display:block;max-width:100%;max-height:62vh;margin:0 auto;border-radius:6px}
+.cropbox svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.cropbox .hd{position:absolute;width:30px;height:30px;margin:-15px 0 0 -15px;border-radius:50%;background:rgba(215,226,23,.25);border:2.5px solid var(--lime);box-shadow:0 2px 8px rgba(0,0,0,.5);touch-action:none;cursor:grab}
+.head .link-btn{font-size:17px;min-width:56px}
+.head .link-btn:last-child{justify-content:flex-end}
 </style>
 </head>
 <body>
@@ -267,6 +276,11 @@ form{display:block;margin-top:6px}
 
     <div id="editor" hidden>
       <div class="preview"><img id="previewImg" alt="รูปนามบัตร"></div>
+      <div class="ptools" id="ptools">
+        <button type="button" class="link-btn" id="tCrop"><svg viewBox="0 0 24 24"><path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/></svg>ปรับขอบ</button>
+        <button type="button" class="link-btn" id="tRot"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>หมุน</button>
+        <button type="button" class="link-btn" id="tOrig"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 15l5-5 4 4 3-3 6 6"/></svg><span>ใช้รูปเดิม</span></button>
+      </div>
       <div class="status" id="ocrStatus" hidden><span class="dot"></span><span id="ocrText"></span></div>
       <form id="form" novalidate>
         <div class="sec">ข้อมูลบนนามบัตร</div>
@@ -394,6 +408,7 @@ form{display:block;margin-top:6px}
 
       <div class="sec">อ่านนามบัตรอัตโนมัติ</div>
       <div class="group rows">
+        <label class="check"><span>ตัดขอบและปรับภาพอัตโนมัติ</span><input type="checkbox" data-k="autoScan"></label>
         <label><span>ตัวอ่าน</span><select data-k="ocrProvider"><option value="gemini">Google Gemini (ฟรี)</option><option value="claude">Claude API</option></select></label>
         <label><span>Gemini key</span><input data-k="geminiKey" type="password" autocomplete="off" spellcheck="false" placeholder="วาง key ที่นี่"></label>
         <label><span>Gemini model</span><input data-k="geminiModel" spellcheck="false"></label>
@@ -459,6 +474,14 @@ form{display:block;margin-top:6px}
   </div>
 </div>
 
+<div class="sheet" id="cropSheet" role="dialog" aria-modal="true" aria-label="ปรับขอบนามบัตร">
+  <div class="body">
+    <div class="head"><button type="button" class="link-btn" data-close>ยกเลิก</button><h3 style="padding:0">ปรับขอบ</h3><button type="button" class="link-btn" id="cropDone" style="font-weight:600">เสร็จ</button></div>
+    <div class="cropbox" id="cropBox"><img id="cropImg" alt="รูปต้นฉบับ"><svg id="cropSvg"></svg></div>
+    <div class="seg" style="margin-top:14px"><button type="button" id="cropAuto">หาขอบอัตโนมัติ</button><button type="button" id="cropAll">ทั้งภาพ</button></div>
+    <p class="foot" style="text-align:center">ลากมุมทั้งสี่ให้ตรงขอบนามบัตร</p>
+  </div>
+</div>
 <div class="sheet" id="cloudSheet" role="dialog" aria-modal="true" aria-label="Google">
   <div class="body"><div class="head"><h3>Google</h3><button class="x" data-close aria-label="ปิด">✕</button></div><div id="cloudBody"></div></div>
 </div>
@@ -506,7 +529,7 @@ const DEF = {
   mailDefault: true, driveOn: true, sheetOn: true,
   account: "chuchchon@360truck.co", clientId: "935886786333-g79hk4e4htmqh2dggggfpd8jertf0g5g.apps.googleusercontent.com",
   sheetId: "1q3IqRcuVLpKRvl7NJ2UxVdBZLiTUiWRqOrKTaFjjWec", sheetTab: "Namecards",
-  ocrProvider: "gemini", geminiKey: "", geminiModel: "gemini-flash-latest", apiKey: "", model: "claude-sonnet-5-5", cardLink: "", cardLinkKey: ""
+  ocrProvider: "gemini", geminiKey: "", geminiModel: "gemini-flash-lite-latest", autoScan: true, apiKey: "", model: "claude-sonnet-5-5", cardLink: "", cardLinkKey: ""
 };
 const clone = o => JSON.parse(JSON.stringify(o));
 /* D = what is kept on this phone and copied to Google Drive; L = this phone only */
@@ -529,7 +552,7 @@ const blobPut = (k, v) => IDB.put("blobs", k, v).catch(() => {});
 async function persist(){ D.ts = Date.now(); L.dirty = true; L.rev++; try { await IDB.put("kv", "data", D); await IDB.put("kv", "local", L); } catch {} }
 const persistLocal = () => IDB.put("kv", "local", L).catch(() => {});
 async function saveDrafts(){
-  try { await IDB.put("kv", "drafts", drafts.map(d => ({ ...d, blob: undefined, selfie: undefined, url: undefined, selfieUrl: undefined, gpsP: undefined }))); } catch {}
+  try { await IDB.put("kv", "drafts", drafts.map(d => ({ ...d, blob: undefined, orig: undefined, selfie: undefined, url: undefined, selfieUrl: undefined, gpsP: undefined }))); } catch {}
 }
 
 /* ================= object URLs for stored photos ================= */
@@ -874,6 +897,131 @@ $("#shSave").addEventListener("click", async () => {
   $("#shMsg").textContent = "บันทึกแล้ว เปิด Gallery แล้วกดแชร์ → Quick Share / LINE ได้เลย";
 });
 
+/* ================= scanner: find the card, straighten it, clean it up (on the phone, no network) ================= */
+const Scan = (() => {
+  const cv = (w, h) => { const c = document.createElement("canvas"); c.width = w; c.height = h; return c; };
+  /* the card's four corners, in the image's own pixels, or null when it can't tell */
+  function detect(img){
+    const W = img.width, H = img.height, k = 420 / Math.max(W, H), w = Math.max(8, Math.round(W * k)), h = Math.max(8, Math.round(H * k));
+    const c = cv(w, h), x = c.getContext("2d", { willReadFrequently: true }); x.drawImage(img, 0, 0, w, h);
+    const d = x.getImageData(0, 0, w, h).data, n = w * h;
+    /* background colour = median of a band along the edges */
+    const R = [], G = [], B = [], band = Math.max(3, Math.round(Math.min(w, h) * .04));
+    for (let y = 0; y < h; y++) for (let xx = 0; xx < w; xx++) {
+      if (xx >= band && xx < w - band && y >= band && y < h - band) continue;
+      const i = (y * w + xx) * 4; R.push(d[i]); G.push(d[i + 1]); B.push(d[i + 2]);
+    }
+    const med = a => { a.sort((p, q) => p - q); return a[a.length >> 1]; };
+    const br = med(R), bg = med(G), bb = med(B);
+    /* distance from background, plus local edge strength, so a dark card on a dark table still stands out */
+    const dist = new Float32Array(n), lum = new Float32Array(n);
+    for (let i = 0; i < n; i++) { const p = i * 4; lum[i] = .3 * d[p] + .59 * d[p + 1] + .11 * d[p + 2]; dist[i] = Math.abs(d[p] - br) + Math.abs(d[p + 1] - bg) + Math.abs(d[p + 2] - bb); }
+    const score = new Float32Array(n);
+    for (let y = 1; y < h - 1; y++) for (let xx = 1; xx < w - 1; xx++) {
+      const i = y * w + xx, gx = lum[i + 1] - lum[i - 1], gy = lum[i + w] - lum[i - w];
+      score[i] = dist[i] + Math.min(120, Math.hypot(gx, gy) * 1.5);
+    }
+    /* background = everything reachable from the photo's edge without crossing a clear change of colour or a strong edge */
+    const bd = []; for (let y = 0; y < h; y++) for (let xx = 0; xx < w; xx++) { if (xx >= band && xx < w - band && y >= band && y < h - band) continue; bd.push(score[y * w + xx] || dist[y * w + xx]); }
+    bd.sort((p, r) => p - r); const T = Math.max(34, Math.min(140, bd[Math.floor(bd.length * .95)] * 1.6));
+    const outside = new Uint8Array(n), st = [];
+    for (let xx = 0; xx < w; xx++) { st.push(xx, (h - 1) * w + xx); } for (let y = 0; y < h; y++) { st.push(y * w, y * w + w - 1); }
+    while (st.length) { const i = st.pop(); if (outside[i] || (score[i] || dist[i]) > T) continue; outside[i] = 1; const xx = i % w, y = (i / w) | 0; if (xx > 0) st.push(i - 1); if (xx < w - 1) st.push(i + 1); if (y > 0) st.push(i - w); if (y < h - 1) st.push(i + w); }
+    /* smooth the outline: shrink the background by 2px so thin cracks into the card close up */
+    const grow = new Uint8Array(n); for (let y = 0; y < h; y++) for (let xx = 0; xx < w; xx++) { const i = y * w + xx; if (!outside[i]) continue; let all = 1; for (let dy = -1; dy <= 1 && all; dy++) for (let dx = -1; dx <= 1; dx++) { const yy = y + dy, xq = xx + dx; if (yy >= 0 && yy < h && xq >= 0 && xq < w && !outside[yy * w + xq]) { all = 0; break; } } grow[i] = all; }
+    outside.set(grow);
+    /* biggest solid piece */
+    const lab = new Int32Array(n); let bestId = 0, bestN = 0, id = 0;
+    for (let s0 = 0; s0 < n; s0++) {
+      if (outside[s0] || lab[s0]) continue; id++; let cnt = 0; const q = [s0]; lab[s0] = id;
+      while (q.length) { const i = q.pop(); cnt++; const xx = i % w, y = (i / w) | 0;
+        for (const j of [xx > 0 ? i - 1 : -1, xx < w - 1 ? i + 1 : -1, y > 0 ? i - w : -1, y < h - 1 ? i + w : -1]) if (j >= 0 && !outside[j] && !lab[j]) { lab[j] = id; q.push(j); } }
+      if (cnt > bestN) { bestN = cnt; bestId = id; }
+    }
+    if (bestN < n * .08 || bestN > n * .97) return null;
+    /* corners: outline of the piece → convex hull → the four hull points that enclose the most area */
+    const pts = [];
+    for (let i = 0; i < n; i++) { if (lab[i] !== bestId) continue; const xx = i % w, y = (i / w) | 0;
+      if (xx === 0 || y === 0 || xx === w - 1 || y === h - 1 || lab[i - 1] !== bestId || lab[i + 1] !== bestId || lab[i - w] !== bestId || lab[i + w] !== bestId) pts.push([xx + .5, y + .5]); }
+    pts.sort((p, r) => p[0] - r[0] || p[1] - r[1]);
+    const cross = (o, p, r) => (p[0] - o[0]) * (r[1] - o[1]) - (p[1] - o[1]) * (r[0] - o[0]);
+    const lower = [], upper = [];
+    for (const p of pts) { while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], p) <= 0) lower.pop(); lower.push(p); }
+    for (let i = pts.length - 1; i >= 0; i--) { const p = pts[i]; while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], p) <= 0) upper.pop(); upper.push(p); }
+    let hull = lower.slice(0, -1).concat(upper.slice(0, -1));
+    if (hull.length < 4) return null;
+    if (hull.length > 60) { const step = hull.length / 60; hull = Array.from({ length: 60 }, (_, i) => hull[Math.floor(i * step)]); }
+    const HN = hull.length, tri = (a, b, c) => Math.abs(cross(hull[a], hull[b], hull[c])) / 2;
+    let bestA = -1, bq = null;
+    for (let i = 0; i < HN; i++) for (let k = i + 2; k < HN; k++) {
+      let b1 = -1, j1 = -1, b2 = -1, l2 = -1;
+      for (let j = i + 1; j < k; j++) { const s = tri(i, j, k); if (s > b1) { b1 = s; j1 = j; } }
+      for (let l = k + 1; l < HN + i; l++) { const s = tri(k, l % HN, i); if (s > b2) { b2 = s; l2 = l % HN; } }
+      if (j1 >= 0 && l2 >= 0 && b1 + b2 > bestA) { bestA = b1 + b2; bq = [i, j1, k, l2]; }
+    }
+    if (!bq) return null;
+    let quad = bq.map(i => hull[i]);
+    /* order: top-left first, then clockwise */
+    const cx = quad.reduce((s, p) => s + p[0], 0) / 4, cy = quad.reduce((s, p) => s + p[1], 0) / 4;
+    quad.sort((p, r) => Math.atan2(p[1] - cy, p[0] - cx) - Math.atan2(r[1] - cy, r[0] - cx));
+    let start = 0, m2 = 1e9; quad.forEach((p, i) => { if (p[0] + p[1] < m2) { m2 = p[0] + p[1]; start = i; } });
+    quad = quad.slice(start).concat(quad.slice(0, start));
+    const q = quad.map(p => [cx + (p[0] - cx) * .978, cy + (p[1] - cy) * .978]).map(p => [p[0] / k, p[1] / k]);   /* trim the table edge */
+    if (bestA < bestN * .85) return null;          /* the piece is not four-cornered enough */
+    return q;
+  }
+  /* solve the 8 numbers that map the output rectangle onto the corners */
+  function homography(src, dst){
+    const A = [], b = [];
+    for (let i = 0; i < 4; i++) { const [x, y] = src[i], [u, v] = dst[i]; A.push([x, y, 1, 0, 0, 0, -u * x, -u * y]); b.push(u); A.push([0, 0, 0, x, y, 1, -v * x, -v * y]); b.push(v); }
+    for (let c = 0; c < 8; c++) { let p = c; for (let r = c + 1; r < 8; r++) if (Math.abs(A[r][c]) > Math.abs(A[p][c])) p = r; [A[c], A[p]] = [A[p], A[c]]; [b[c], b[p]] = [b[p], b[c]];
+      for (let r = 0; r < 8; r++) { if (r === c) continue; const f = A[r][c] / A[c][c]; for (let j = c; j < 8; j++) A[r][j] -= f * A[c][j]; b[r] -= f * b[c]; } }
+    return b.map((v, i) => v / A[i][i]);
+  }
+  function warp(img, q, maxSide){
+    const dd = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
+    let ow = Math.max(dd(q[0], q[1]), dd(q[3], q[2])), oh = Math.max(dd(q[0], q[3]), dd(q[1], q[2]));
+    const s = Math.min(1, (maxSide || 1800) / Math.max(ow, oh)); ow = Math.round(ow * s); oh = Math.round(oh * s);
+    const sc = cv(img.width, img.height), sx = sc.getContext("2d", { willReadFrequently: true }); sx.drawImage(img, 0, 0);
+    const S = sx.getImageData(0, 0, img.width, img.height).data, SW = img.width, SH = img.height;
+    const Hm = homography([[0, 0], [ow, 0], [ow, oh], [0, oh]], q);
+    const out = cv(ow, oh), ox = out.getContext("2d"), O = ox.createImageData(ow, oh), D = O.data;
+    for (let v = 0; v < oh; v++) for (let u = 0; u < ow; u++) {
+      const z = Hm[6] * u + Hm[7] * v + 1, x = (Hm[0] * u + Hm[1] * v + Hm[2]) / z, y = (Hm[3] * u + Hm[4] * v + Hm[5]) / z;
+      const x0 = Math.max(0, Math.min(SW - 2, x | 0)), y0 = Math.max(0, Math.min(SH - 2, y | 0)), fx = Math.min(1, Math.max(0, x - x0)), fy = Math.min(1, Math.max(0, y - y0));
+      const i00 = (y0 * SW + x0) * 4, i10 = i00 + 4, i01 = i00 + SW * 4, i11 = i01 + 4, o = (v * ow + u) * 4;
+      for (let ch = 0; ch < 3; ch++) D[o + ch] = (S[i00 + ch] * (1 - fx) + S[i10 + ch] * fx) * (1 - fy) + (S[i01 + ch] * (1 - fx) + S[i11 + ch] * fx) * fy;
+      D[o + 3] = 255;
+    }
+    ox.putImageData(O, 0, 0); return out;
+  }
+  /* auto levels + a touch of colour + gentle sharpening */
+  function enhance(c){
+    const x = c.getContext("2d", { willReadFrequently: true }), w = c.width, h = c.height, im = x.getImageData(0, 0, w, h), d = im.data, n = w * h;
+    const hist = new Uint32Array(256); for (let i = 0; i < d.length; i += 4) hist[(.3 * d[i] + .59 * d[i + 1] + .11 * d[i + 2]) | 0]++;
+    let lo = 0, hi = 255, acc = 0; for (; lo < 255; lo++) { acc += hist[lo]; if (acc > n * .01) break; } acc = 0; for (; hi > 0; hi--) { acc += hist[hi]; if (acc > n * .01) break; }
+    if (hi - lo < 40) { lo = Math.max(0, lo - 20); hi = Math.min(255, hi + 20); }
+    const sc = 255 / (hi - lo), lut = new Uint8ClampedArray(256); for (let i = 0; i < 256; i++) lut[i] = (i - lo) * sc;
+    const src = new Uint8ClampedArray(d.length);
+    for (let i = 0; i < d.length; i += 4) { let r = lut[d[i]], g = lut[d[i + 1]], b = lut[d[i + 2]]; const l = .3 * r + .59 * g + .11 * b; src[i] = l + (r - l) * 1.12; src[i + 1] = l + (g - l) * 1.12; src[i + 2] = l + (b - l) * 1.12; src[i + 3] = 255; }
+    const a = .45;
+    for (let y = 0; y < h; y++) for (let xx = 0; xx < w; xx++) { const i = (y * w + xx) * 4;
+      if (y === 0 || xx === 0 || y === h - 1 || xx === w - 1) { d[i] = src[i]; d[i + 1] = src[i + 1]; d[i + 2] = src[i + 2]; continue; }
+      for (let ch = 0; ch < 3; ch++) { const p = i + ch, s = src[p]; d[p] = s + a * (4 * s - src[p - 4] - src[p + 4] - src[p - w * 4] - src[p + w * 4]); } }
+    x.putImageData(im, 0, 0); return c;
+  }
+  function rotate(c){ const o = cv(c.height, c.width), x = o.getContext("2d"); x.translate(o.width, 0); x.rotate(Math.PI / 2); x.drawImage(c, 0, 0); return o; }
+  const toBlob = (c, q) => new Promise(r => c.toBlob(r, "image/jpeg", q || .9));
+  const full = img => [[0, 0], [img.width, 0], [img.width, img.height], [0, img.height]];
+  /* one call: corners (found or whole photo) → straight, clean card */
+  async function process(img, quad, turns){
+    const q = quad || full(img); let c = warp(img, q, 1800); enhance(c);
+    for (let i = 0; i < (turns || 0) % 4; i++) c = rotate(c);
+    return toBlob(c, .9);
+  }
+  return { detect, process, full };
+})();
+
 /* ================= images & location ================= */
 async function shrink(file, max = 1600, q = .85){
   let src;
@@ -911,15 +1059,18 @@ async function claude(content, maxTokens){
   return (j.content || []).filter(x => x.type === "text").map(x => x.text).join("");
 }
 /* free models get busy at peak times: wait a moment, then fall back to a lighter model */
-const GEMINI_FALLBACK = ["gemini-flash-lite-latest", "gemini-2.5-flash", "gemini-2.5-flash-lite"];
+const GEMINI_FALLBACK = ["gemini-flash-lite-latest", "gemini-2.5-flash-lite", "gemini-flash-latest", "gemini-2.5-flash"];
 async function gemini(parts, json){
   if (!S.geminiKey) throw { code: "nokey" };
   const models = [...new Set([S.geminiModel || DEF.geminiModel, ...GEMINI_FALLBACK])];
   let last;
   for (const model of models) for (let a = 0; a < 2; a++) {
-    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${enc(model)}:generateContent`, { method: "POST",
+    const ac = new AbortController(), tm = setTimeout(() => ac.abort(), 25000); gemini.trying = model; if (cur && cur.status === "reading") drawOcr();
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${enc(model)}:generateContent`, { method: "POST", signal: ac.signal,
       headers: { "content-type": "application/json", "x-goog-api-key": S.geminiKey },
-      body: JSON.stringify({ contents: [{ role: "user", parts }], generationConfig: json ? { responseMimeType: "application/json" } : {} }) }).catch(() => null);
+      body: JSON.stringify({ contents: [{ role: "user", parts }], generationConfig: json ? { responseMimeType: "application/json" } : {} }) }).catch(e => (e && e.name === "AbortError") ? "timeout" : null);
+    clearTimeout(tm);
+    if (r === "timeout") { last = { code: "busy", message: "ตอบช้าเกิน 25 วินาที" }; break; }
     if (!r) { last = { code: "api", message: "ต่ออินเทอร์เน็ตไม่ได้" }; await sleep(1200); continue; }
     const j = await r.json().catch(() => ({}));
     if (r.ok) { const txt = ((j.candidates || [])[0]?.content?.parts || []).map(p => p.text || "").join(""); if (txt) { gemini.used = model; return txt; } last = { code: "api", message: "ไม่มีคำตอบ" }; break; }
@@ -932,7 +1083,7 @@ async function gemini(parts, json){
   throw last || { code: "api" };
 }
 async function ocr(blob){
-  const data = await blobB64(blob);
+  const data = await blobB64(await shrink(blob, 1280, .88));
   const t = (S.ocrProvider || "gemini") === "claude"
     ? await claude([{ type: "image", source: { type: "base64", media_type: "image/jpeg", data } }, { type: "text", text: OCR_PROMPT }])
     : await gemini([{ inline_data: { mime_type: "image/jpeg", data } }, { text: OCR_PROMPT }], true);
@@ -952,10 +1103,60 @@ function drawOcr(){
   const st = $("#ocrStatus"), d = cur;
   if (!d || !d.status || d.status === "ready" || d.status === "edit") { st.hidden = true; return; }
   st.hidden = false; st.querySelector(".dot").style.animation = d.status === "error" ? "none" : "";
-  $("#ocrText").textContent = d.status === "error" ? (OCR_ERR[d.err] || "อ่านนามบัตรไม่สำเร็จ — กรอกเองได้" + (d.errMsg ? " (" + d.errMsg + ")" : "")) : d.status === "waiting" ? "รอคิวอ่าน…" : "กำลังอ่านนามบัตร… (3–15 วินาที)";
+  $("#ocrText").textContent = d.status === "error" ? (OCR_ERR[d.err] || "อ่านนามบัตรไม่สำเร็จ — กรอกเองได้" + (d.errMsg ? " (" + d.errMsg + ")" : "")) : d.status === "waiting" ? "รอคิวอ่าน…" : "กำลังอ่านนามบัตร…" + (gemini.trying && S.ocrProvider !== "claude" ? " (" + gemini.trying.replace(/^gemini-/, "") + ")" : "") + " · กรอกเองระหว่างรอได้";
 }
 
 /* ================= drafts / queue ================= */
+/* straighten and clean the photo; keep the original so the edges can be fixed later */
+async function rescan(d, findEdges){
+  try {
+    const img = await createImageBitmap(d.orig);
+    if (findEdges) d.quad = Scan.detect(img);
+    d.blob = await Scan.process(img, d.useOrig ? null : d.quad, d.turns || 0);
+    if (d.useOrig && !d.turns) d.blob = d.orig;
+  } catch { d.blob = d.blob || d.orig; }
+  if (d.url) URL.revokeObjectURL(d.url);
+  d.url = URL.createObjectURL(d.blob); await blobPut("draft:" + d.id, d.blob);
+  if (cur === d) { $("#previewImg").src = d.url; drawTools(); }
+}
+function drawTools(){
+  const d = cur, t = $("#ptools"); t.hidden = !d || !d.orig;
+  if (d) $("#tOrig span").textContent = d.useOrig ? "ตัดขอบ + ปรับภาพ" : "ใช้รูปเดิม";
+}
+async function rereadIfNeeded(d){ if (d.status === "edit") return; d.status = "waiting"; drawQueue(); if (cur === d) drawOcr(); saveDrafts(); pumpOcr(); }
+$("#tRot").addEventListener("click", async () => { const d = cur; if (!d || !d.orig) return; d.turns = ((d.turns || 0) + 1) % 4; await rescan(d, false); saveDrafts(); });
+$("#tOrig").addEventListener("click", async () => { const d = cur; if (!d || !d.orig) return; d.useOrig = !d.useOrig; await rescan(d, false); saveDrafts(); });
+/* drag the four corners (like the Notes scanner) */
+let crop = null;
+$("#tCrop").addEventListener("click", async () => {
+  const d = cur; if (!d || !d.orig) return;
+  const img = await createImageBitmap(d.orig); const W = img.width, H = img.height;
+  crop = { d, W, H, q: (d.quad || Scan.full(img)).map(p => p.slice()), img };
+  $("#cropImg").src = URL.createObjectURL(d.orig); $("#cropSheet").classList.add("on");
+  $("#cropImg").onload = drawCrop;
+});
+function drawCrop(){
+  if (!crop) return; const box = $("#cropBox"), im = $("#cropImg"), k = im.clientWidth / crop.W;
+  box.style.width = im.clientWidth + "px"; box.querySelectorAll(".hd").forEach(h => h.remove());
+  const P = crop.q.map(p => [p[0] * k, p[1] * k]);
+  $("#cropSvg").innerHTML = `<polygon points="${P.map(p => p.join(",")).join(" ")}" fill="rgba(215,226,23,.12)" stroke="#d7e217" stroke-width="2"/>`;
+  P.forEach((p, i) => { const h = document.createElement("div"); h.className = "hd"; h.style.left = p[0] + "px"; h.style.top = p[1] + "px"; h.dataset.i = i; box.append(h); });
+}
+$("#cropBox").addEventListener("pointerdown", e => {
+  const h = e.target.closest(".hd"); if (!h || !crop) return; e.preventDefault(); h.setPointerCapture(e.pointerId);
+  const i = +h.dataset.i, im = $("#cropImg");
+  const move = ev => { const r = im.getBoundingClientRect(), k = r.width / crop.W;
+    crop.q[i] = [Math.max(0, Math.min(crop.W, (ev.clientX - r.left) / k)), Math.max(0, Math.min(crop.H, (ev.clientY - r.top) / k))]; drawCrop(); };
+  const up = () => { h.removeEventListener("pointermove", move); h.removeEventListener("pointerup", up); h.removeEventListener("pointercancel", up); };
+  h.addEventListener("pointermove", move); h.addEventListener("pointerup", up); h.addEventListener("pointercancel", up);
+});
+$("#cropAuto").addEventListener("click", () => { if (!crop) return; const q = Scan.detect(crop.img); if (q) { crop.q = q; drawCrop(); } else toast("หาขอบไม่เจอ ลากมุมเองได้"); });
+$("#cropAll").addEventListener("click", () => { if (!crop) return; crop.q = Scan.full(crop.img); drawCrop(); });
+$("#cropDone").addEventListener("click", async () => {
+  if (!crop) return; const d = crop.d; d.quad = crop.q; d.useOrig = false; $("#cropSheet").classList.remove("on"); crop = null;
+  await rescan(d, false); rereadIfNeeded(d);
+});
+window.addEventListener("resize", drawCrop);
 async function addFiles(files, fromCamera){
   files = [...files].filter(f => /^image\//.test(f.type) || !f.type); if (!files.length) return;
   const devPos = fromCamera ? deviceGps() : null;
@@ -964,7 +1165,8 @@ async function addFiles(files, fromCamera){
     const d = { id: "d" + uid(), status: "waiting", ocr: null, gps: null, locOk: null };
     drafts.push(d);
     exifGps(f).then(async gg => { d.gps = gg || (devPos ? await devPos : null); d.gSrc = gg ? "จากรูป" : "จากเครื่อง"; if (!d.gps) d.locOk = false; if (cur === d) drawLoc(); saveDrafts(); });
-    d.blob = await shrink(f); d.url = URL.createObjectURL(d.blob); await blobPut("draft:" + d.id, d.blob);
+    d.orig = await shrink(f, 2400, .9); await blobPut("draftorig:" + d.id, d.orig);
+    await rescan(d, S.autoScan !== false);
   }
   saveDrafts(); drawQueue();
   if (!cur) openDraft(drafts.find(x => x.status !== "saved"));
@@ -994,7 +1196,7 @@ function openDraft(d){
   if (d.mail) { $("#mailLang").value = d.mail.lang; $("#sendMail").checked = d.mail.on; $("#mailSubj").value = d.mail.subj; $("#mailBody").value = d.mail.body; $("#mailBody").dataset.touched = d.mail.touched || ""; }
   else { $("#sendMail").checked = d.status !== "edit" && S.mailDefault; $("#mailLang").value = (d.ocr && d.ocr.lang === "en") ? "en" : "th"; fillMail(); }
   if (d.status === "edit" && !d.mail) fillMail();
-  drawSelfie(); drawLoc(); drawOcr(); drawQueue(); drawPlaces();
+  drawSelfie(); drawLoc(); drawOcr(); drawQueue(); drawPlaces(); drawTools();
 }
 function fillFromOcr(d, quiet){
   const f = $("#form"), r = d.ocr || {};
@@ -1085,7 +1287,7 @@ $("#form").addEventListener("submit", async e => {
     else if (!base.mail) c.mail = { status: "skipped" };
     const i = D.cards.findIndex(x => x.id === id); if (i >= 0) D.cards[i] = c; else D.cards.push(c);
     await persist();
-    blobPut("draft:" + d.id, null); IDB.del("blobs", "draft:" + d.id).catch(() => {}); IDB.del("blobs", "draftself:" + d.id).catch(() => {});
+    blobPut("draft:" + d.id, null); IDB.del("blobs", "draft:" + d.id).catch(() => {}); IDB.del("blobs", "draftself:" + d.id).catch(() => {}); IDB.del("blobs", "draftorig:" + d.id).catch(() => {});
     sessionPlace = { day: new Date().toDateString(), v: rec.place };
     drafts = drafts.filter(x => x !== d); saveDrafts();
     renderList(); drawPlaces();
@@ -1235,11 +1437,13 @@ function applySettings(){ fillSettings(); drawLinks(); renderCard(); $("#mailFro
 (async () => {
   try { await IDB.open(); } catch { toast("เครื่องนี้เก็บข้อมูลไม่ได้ (โหมดไม่ระบุตัวตน?)", 6000); }
   try {
-    const d = await IDB.get("kv", "data"); if (d) { D = d; D.settings = { ...clone(DEF), ...(d.settings || {}) }; S = D.settings; }
+    const d = await IDB.get("kv", "data"); if (d) { D = d; D.settings = { ...clone(DEF), ...(d.settings || {}) }; S = D.settings;
+      if (S.geminiModel === "gemini-flash-latest" && !S.m2) { S.geminiModel = DEF.geminiModel; S.m2 = 1; } }
     const l = await IDB.get("kv", "local"); if (l) L = Object.assign(L, l, { rev: 0 });
     const ds = await IDB.get("kv", "drafts");
     if (ds && ds.length) for (const x of ds) { const b = await blobGet("draft:" + x.id); if (!b) continue; const sb = await blobGet("draftself:" + x.id);
-      drafts.push({ ...x, blob: b, url: URL.createObjectURL(b), selfie: sb || null, selfieUrl: sb ? URL.createObjectURL(sb) : null, status: x.status === "reading" ? "waiting" : x.status }); }
+      const ob = await blobGet("draftorig:" + x.id);
+      drafts.push({ ...x, blob: b, orig: ob || null, url: URL.createObjectURL(b), selfie: sb || null, selfieUrl: sb ? URL.createObjectURL(sb) : null, status: x.status === "reading" ? "waiting" : x.status }); }
   } catch {}
   applySettings(); renderList(); drawPlaces();
   if (drafts.length) { go("scan"); openDraft(drafts[0]); pumpOcr(); }
