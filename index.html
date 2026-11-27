@@ -233,7 +233,10 @@ form{display:block;margin-top:6px}
 .cropbox{position:relative;margin:0 auto;max-width:100%;touch-action:none;user-select:none;-webkit-user-select:none}
 .cropbox img{display:block;max-width:100%;max-height:62vh;margin:0 auto;border-radius:6px}
 .cropbox svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
-.cropbox .hd{position:absolute;width:30px;height:30px;margin:-15px 0 0 -15px;border-radius:50%;background:rgba(215,226,23,.25);border:2.5px solid var(--lime);box-shadow:0 2px 8px rgba(0,0,0,.5);touch-action:none;cursor:grab}
+.cropbox .hd{position:absolute;left:0;top:0;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;background:rgba(215,226,23,.18);border:2.5px solid var(--lime);box-shadow:0 2px 8px rgba(0,0,0,.5);pointer-events:none;will-change:transform;transition:width .12s,height .12s,margin .12s}
+.cropbox .hd.on{width:14px;height:14px;margin:-7px 0 0 -7px;background:var(--lime)}
+.cropbox #loupe{position:absolute;left:0;top:0;width:112px;height:112px;border-radius:50%;border:3px solid #fff;box-shadow:0 6px 20px rgba(0,0,0,.6);pointer-events:none;will-change:transform;z-index:2}
+#cropSheet .body{overflow:hidden;touch-action:none}
 .head .link-btn{font-size:17px;min-width:56px}
 .head .link-btn:last-child{justify-content:flex-end}
 </style>
@@ -484,7 +487,7 @@ form{display:block;margin-top:6px}
 <div class="sheet" id="cropSheet" role="dialog" aria-modal="true" aria-label="ปรับขอบนามบัตร">
   <div class="body">
     <div class="head"><button type="button" class="link-btn" data-close>ยกเลิก</button><h3 style="padding:0">ปรับขอบ</h3><button type="button" class="link-btn" id="cropDone" style="font-weight:600">เสร็จ</button></div>
-    <div class="cropbox" id="cropBox"><img id="cropImg" alt="รูปต้นฉบับ"><svg id="cropSvg"></svg></div>
+    <div class="cropbox" id="cropBox"><img id="cropImg" alt="รูปต้นฉบับ"><svg id="cropSvg"></svg><canvas id="loupe" width="336" height="336" hidden></canvas></div>
     <div class="seg" style="margin-top:14px"><button type="button" id="cropAuto">หาขอบอัตโนมัติ</button><button type="button" id="cropAll">ทั้งภาพ</button></div>
     <p class="foot" style="text-align:center">ลากมุมทั้งสี่ให้ตรงขอบนามบัตร</p>
   </div>
@@ -907,8 +910,8 @@ $("#shSave").addEventListener("click", async () => {
 /* ================= scanner: find the card, straighten it, clean it up (on the phone, no network) ================= */
 const Scan = (() => {
   const cv = (w, h) => { const c = document.createElement("canvas"); c.width = w; c.height = h; return c; };
-  /* the card's four corners, in the image's own pixels, or null when it can't tell */
-  function detect(img){
+  /* outline by colour: the card's four corners, in the image's own pixels, or null when it can't tell */
+  function detectBlob(img){
     const W = img.width, H = img.height, k = 420 / Math.max(W, H), w = Math.max(8, Math.round(W * k)), h = Math.max(8, Math.round(H * k));
     const c = cv(w, h), x = c.getContext("2d", { willReadFrequently: true }); x.drawImage(img, 0, 0, w, h);
     const d = x.getImageData(0, 0, w, h).data, n = w * h;
@@ -973,10 +976,118 @@ const Scan = (() => {
     quad.sort((p, r) => Math.atan2(p[1] - cy, p[0] - cx) - Math.atan2(r[1] - cy, r[0] - cx));
     let start = 0, m2 = 1e9; quad.forEach((p, i) => { if (p[0] + p[1] < m2) { m2 = p[0] + p[1]; start = i; } });
     quad = quad.slice(start).concat(quad.slice(0, start));
-    const q = quad.map(p => [cx + (p[0] - cx) * .978, cy + (p[1] - cy) * .978]).map(p => [p[0] / k, p[1] / k]);   /* trim the table edge */
     if (bestA < bestN * .85) return null;          /* the piece is not four-cornered enough */
-    return q;
+    return quad.map(p => [p[0] / k, p[1] / k]);
   }
+  /* find the card by its four straight edges: works when the card is held in a hand or lies on a busy / same-colour table */
+  function detectLines(img, oldQuad){
+    const W = img.width, H = img.height, k = 480 / Math.max(W, H), w = Math.max(16, Math.round(W * k)), h = Math.max(16, Math.round(H * k)), n = w * h;
+    const c = document.createElement("canvas"); c.width = w; c.height = h;
+    const x = c.getContext("2d", { willReadFrequently: true }); x.filter = "blur(1px)"; x.drawImage(img, 0, 0, w, h); x.filter = "none";
+    const d = x.getImageData(0, 0, w, h).data;
+    /* colour gradient: the strongest of R, G, B, so white card on skin or on a grey desk both show up */
+    const gx = new Float32Array(n), gy = new Float32Array(n), mag = new Float32Array(n);
+    for (let y = 1; y < h - 1; y++) for (let xx = 1; xx < w - 1; xx++) {
+      const i = y * w + xx; let bx = 0, by = 0, bm = -1;
+      for (let ch = 0; ch < 3; ch++) {
+        const p = i * 4 + ch, W4 = w * 4;
+        const sx = (d[p - W4 + 4] + 2 * d[p + 4] + d[p + W4 + 4]) - (d[p - W4 - 4] + 2 * d[p - 4] + d[p + W4 - 4]);
+        const sy = (d[p + W4 - 4] + 2 * d[p + W4] + d[p + W4 + 4]) - (d[p - W4 - 4] + 2 * d[p - W4] + d[p - W4 + 4]);
+        const m = sx * sx + sy * sy; if (m > bm) { bm = m; bx = sx; by = sy; }
+      }
+      gx[i] = bx / 4; gy[i] = by / 4; mag[i] = Math.sqrt(bm) / 4;
+    }
+    /* threshold from the picture itself */
+    const sample = []; for (let i = 0; i < n; i += 3) if (mag[i] > 0) sample.push(mag[i]);
+    sample.sort((a, b) => a - b);
+    const tEdge = Math.max(10, sample[Math.floor(sample.length * .86)] || 10), tSide = Math.max(7, tEdge * .55);
+    /* Hough vote, each edge pixel only for lines along its own direction */
+    const NT = 180, diag = Math.ceil(Math.hypot(w, h)), NR = 2 * diag + 1, acc = new Float32Array(NT * NR);
+    const cs = new Float32Array(NT), sn = new Float32Array(NT); for (let t = 0; t < NT; t++) { cs[t] = Math.cos(t * Math.PI / NT); sn[t] = Math.sin(t * Math.PI / NT); }
+    for (let y = 2; y < h - 2; y++) for (let xx = 2; xx < w - 2; xx++) {
+      const i = y * w + xx, m = mag[i]; if (m < tEdge) continue;
+      /* thin edges: keep only the local maximum across the edge */
+      const ux = gx[i] / m, uy = gy[i] / m, a = Math.round(xx + ux), b = Math.round(y + uy), a2 = Math.round(xx - ux), b2 = Math.round(y - uy);
+      if (mag[b * w + a] > m || mag[b2 * w + a2] > m) continue;
+      let th = Math.atan2(uy, ux); if (th < 0) th += Math.PI; if (th >= Math.PI) th -= Math.PI;
+      const t0 = Math.round(th / Math.PI * NT), wgt = Math.min(m, 60);
+      for (let dt = -2; dt <= 2; dt++) { const t = (t0 + dt + NT) % NT; const r = Math.round(xx * cs[t] + y * sn[t]) + diag; acc[t * NR + r] += wgt; }
+    }
+    /* strongest separate lines */
+    const peaks = [];
+    for (let t = 0; t < NT; t++) for (let r = 1; r < NR - 1; r++) { const v = acc[t * NR + r]; if (v > tEdge * 18) peaks.push([v, t, r - diag]); }
+    peaks.sort((a, b) => b[0] - a[0]);
+    const lines = [];
+    for (const p of peaks) {
+      if (lines.length >= 36) break;
+      if (lines.some(l => { let dt = Math.abs(l.t - p[1]); dt = Math.min(dt, NT - dt); const sameDir = Math.abs(l.t - p[1]) < NT / 2; return dt <= 4 && Math.abs((sameDir ? l.r - p[2] : l.r + p[2])) <= 6; })) continue;
+      lines.push({ v: p[0], t: p[1], r: p[2], c: cs[p[1]], s: sn[p[1]] });
+    }
+    /* how much of a side really is an edge running along it */
+    function sideCov(P, Q){
+      const L = Math.hypot(Q[0] - P[0], Q[1] - P[1]); if (L < 8) return 0;
+      const nx = -(Q[1] - P[1]) / L, ny = (Q[0] - P[0]) / L; let hit = 0, tot = 0;
+      for (let s = 3; s < L - 3; s += 1) {
+        const px = P[0] + (Q[0] - P[0]) * s / L, py = P[1] + (Q[1] - P[1]) * s / L; tot++;
+        if (px < 1 || py < 1 || px > w - 2 || py > h - 2) continue;
+        for (let o = -2; o <= 2; o++) { const qx = Math.round(px + nx * o), qy = Math.round(py + ny * o); if (qx < 1 || qy < 1 || qx > w - 2 || qy > h - 2) continue;
+          const i = qy * w + qx; if (Math.abs(gx[i] * nx + gy[i] * ny) > tSide) { hit++; break; } }
+      }
+      return tot ? hit / tot : 0;
+    }
+    const inter = (a, b) => { const det = a.c * b.s - a.s * b.c; if (Math.abs(det) < 1e-6) return null; return [(a.r * b.s - a.s * b.r) / det, (a.c * b.r - a.r * b.c) / det]; };
+    const order = q => {
+      const cx = q.reduce((s, p) => s + p[0], 0) / 4, cy = q.reduce((s, p) => s + p[1], 0) / 4;
+      q = q.slice().sort((p, r) => Math.atan2(p[1] - cy, p[0] - cx) - Math.atan2(r[1] - cy, r[0] - cx));
+      let st = 0, m = 1e9; q.forEach((p, i) => { if (p[0] + p[1] < m) { m = p[0] + p[1]; st = i; } });
+      return q.slice(st).concat(q.slice(0, st));
+    };
+    const area = q => Math.abs(q.reduce((s, p, i) => { const r = q[(i + 1) % 4]; return s + p[0] * r[1] - r[0] * p[1]; }, 0)) / 2;
+    const convex = q => { let sg = 0; for (let i = 0; i < 4; i++) { const a = q[i], b = q[(i + 1) % 4], e = q[(i + 2) % 4]; const z = (b[0] - a[0]) * (e[1] - b[1]) - (b[1] - a[1]) * (e[0] - b[0]); if (!sg) sg = Math.sign(z); else if (Math.sign(z) !== sg) return false; } return true; };
+    function score(q){
+      if (!q || !convex(q)) return -1;
+      const A = area(q) / (w * h); if (A < .05 || A > .985) return -1;
+      const cov = [0, 1, 2, 3].map(i => sideCov(q[i], q[(i + 1) % 4])), mn = Math.min(...cov), mean = cov.reduce((a, b) => a + b) / 4;
+      if (mn < .28) return -1;
+      const dd = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
+      const s1 = (dd(q[0], q[1]) + dd(q[3], q[2])) / 2, s2 = (dd(q[0], q[3]) + dd(q[1], q[2])) / 2, ar = Math.max(s1, s2) / Math.max(1, Math.min(s1, s2));
+      const shape = Math.exp(-Math.pow(Math.log(ar) - Math.log(1.65), 2) / (2 * .3 * .3));
+      /* corners should be close to right angles once perspective is allowed for */
+      let ang = 1; for (let i = 0; i < 4; i++) { const a = q[(i + 3) % 4], b = q[i], e = q[(i + 1) % 4]; const v1 = [a[0] - b[0], a[1] - b[1]], v2 = [e[0] - b[0], e[1] - b[1]]; const cosv = Math.abs((v1[0] * v2[0] + v1[1] * v2[1]) / (Math.hypot(...v1) * Math.hypot(...v2))); ang *= 1 - Math.max(0, cosv - .17); }
+      return mean * mean * (.5 + .5 * mn) * Math.pow(A, .35) * (.35 + .65 * shape) * ang;
+    }
+    let best = null, bestS = -1;
+    const dirDiff = (a, b) => { const t = Math.abs(a.t - b.t); return Math.min(t, NT - t); };
+    const pairs = [];
+    for (let i = 0; i < lines.length; i++) for (let j = i + 1; j < lines.length; j++) {
+      const a = lines[i], b = lines[j]; if (dirDiff(a, b) > 22) continue;
+      /* distance between them through the picture's centre */
+      const da = w / 2 * a.c + h / 2 * a.s - a.r, db = w / 2 * b.c + h / 2 * b.s - b.r;
+      if (Math.abs(da - db) < Math.min(w, h) * .12 && Math.sign(da) === Math.sign(db)) continue;
+      pairs.push([a, b]);
+    }
+    const mx = w * .04, my = h * .04;
+    for (let i = 0; i < pairs.length; i++) for (let j = i + 1; j < pairs.length; j++) {
+      const [a, b] = pairs[i], [e, f] = pairs[j];
+      if (dirDiff(a, e) < 40) continue;
+      const q = [inter(a, e), inter(a, f), inter(b, f), inter(b, e)];
+      if (q.some(p => !p || p[0] < -mx || p[1] < -my || p[0] > w + mx || p[1] > h + my)) continue;
+      const oq = order(q), s = score(oq); if (s > bestS) { bestS = s; best = oq; }
+    }
+    /* the old outline method may still win on plain tables */
+    if (oldQuad) {
+      const oq = order(oldQuad.map(p => [p[0] * k, p[1] * k])), s = score(oq) * 1.05, oa = area(oq) / (w * h);
+      /* a believable outline from the colour method that holds the line result inside it: the lines found a stripe or photo printed on the card */
+      const inside = (q, P) => { const cx = q.reduce((s, p) => s + p[0], 0) / 4, cy = q.reduce((s, p) => s + p[1], 0) / 4, Q = q.map(p => [cx + (p[0] - cx) * 1.04, cy + (p[1] - cy) * 1.04]);
+        return P.every(pt => { let sg = 0; for (let i = 0; i < 4; i++) { const a = Q[i], b = Q[(i + 1) % 4], z = Math.sign((b[0] - a[0]) * (pt[1] - a[1]) - (b[1] - a[1]) * (pt[0] - a[0])); if (!z) continue; if (!sg) sg = z; else if (z !== sg) return false; } return true; }); };
+      if (convex(oq) && oa > .05 && oa < .88 && (!best || (inside(oq, best) && area(best) < area(oq) * .8))) { best = oq; bestS = Math.max(bestS, .5); }
+      else if (s > bestS) { bestS = s; best = oq; }
+    }
+    if (!best || bestS < .05) return null;
+    const cx = best.reduce((s, p) => s + p[0], 0) / 4, cy = best.reduce((s, p) => s + p[1], 0) / 4;
+    return best.map(p => [Math.max(0, Math.min(W, (cx + (p[0] - cx) * .993) / k)), Math.max(0, Math.min(H, (cy + (p[1] - cy) * .993) / k))]);
+  }
+  function detect(img){ let blob = null; try { blob = detectBlob(img); } catch {} try { return detectLines(img, blob); } catch { return blob; } }
   /* solve the 8 numbers that map the output rectangle onto the corners */
   function homography(src, dst){
     const A = [], b = [];
@@ -1163,25 +1274,46 @@ $("#tCrop").addEventListener("click", async () => {
   const d = cur; if (!d || !d.orig) return;
   const img = await createImageBitmap(d.orig); const W = img.width, H = img.height;
   if (!d.quad && d.status === "edit") d.quad = Scan.detect(img);
-  crop = { d, W, H, q: (d.quad || Scan.full(img)).map(p => p.slice()), img };
+  crop = { d, W, H, q: (d.quad || Scan.full(img)).map(p => p.slice()), img, drag: null };
   $("#cropImg").src = URL.createObjectURL(d.orig); $("#cropSheet").classList.add("on");
   $("#cropImg").onload = drawCrop;
 });
 function drawCrop(){
-  if (!crop) return; const box = $("#cropBox"), im = $("#cropImg"), k = im.clientWidth / crop.W;
-  box.style.width = im.clientWidth + "px"; box.querySelectorAll(".hd").forEach(h => h.remove());
-  const P = crop.q.map(p => [p[0] * k, p[1] * k]);
-  $("#cropSvg").innerHTML = `<polygon points="${P.map(p => p.join(",")).join(" ")}" fill="rgba(215,226,23,.12)" stroke="#d7e217" stroke-width="2"/>`;
-  P.forEach((p, i) => { const h = document.createElement("div"); h.className = "hd"; h.style.left = p[0] + "px"; h.style.top = p[1] + "px"; h.dataset.i = i; box.append(h); });
+  if (!crop) return; const box = $("#cropBox"), im = $("#cropImg"), k = im.clientWidth / crop.W; if (!k) return;
+  box.style.width = im.clientWidth + "px";
+  let hs = box.querySelectorAll(".hd");
+  if (hs.length !== 4) { hs.forEach(h => h.remove()); for (let i = 0; i < 4; i++) { const h = document.createElement("div"); h.className = "hd"; h.dataset.i = i; box.append(h); } hs = box.querySelectorAll(".hd"); }
+  const P = crop.q.map(p => [p[0] * k, p[1] * k]), w = im.clientWidth, h = im.clientHeight, pts = P.map(p => p.join(",")).join(" ");
+  $("#cropSvg").innerHTML = `<path d="M0 0H${w}V${h}H0Z M${P.map(p => p.join(" ")).join("L")}Z" fill="rgba(0,0,0,.45)" fill-rule="evenodd"/><polygon points="${pts}" fill="none" stroke="#d7e217" stroke-width="2" stroke-linejoin="round"/>`;
+  hs.forEach((el, i) => { el.style.transform = `translate(${P[i][0]}px,${P[i][1]}px)`; el.classList.toggle("on", crop.drag === i); });
 }
+let cropRaf = 0;
+const cropPaint = () => { if (!cropRaf) cropRaf = requestAnimationFrame(() => { cropRaf = 0; drawCrop(); drawLoupe(); }); };
+function drawLoupe(){
+  const L = $("#loupe"); if (!crop || crop.drag == null) { L.hidden = true; return; }
+  const im = $("#cropImg"), k = im.clientWidth / crop.W, p = crop.q[crop.drag], S = 112, Z = 2.6, src = S / (k * Z);
+  L.hidden = false; L.style.transform = `translate(${p[0] * k - S / 2}px,${Math.max(-S * .35, p[1] * k - S - 46)}px)`;
+  const x = L.getContext("2d"), dpr = L.width / S; x.setTransform(dpr, 0, 0, dpr, 0, 0); x.fillStyle = "#000"; x.fillRect(0, 0, S, S);
+  x.drawImage(crop.img, p[0] - src / 2, p[1] - src / 2, src, src, 0, 0, S, S);
+  /* the two edges meeting at this corner */
+  const o = i => { const q = crop.q[(i + 4) % 4]; return [(q[0] - p[0]) * k * Z + S / 2, (q[1] - p[1]) * k * Z + S / 2]; };
+  x.strokeStyle = "#d7e217"; x.lineWidth = 1.5; x.beginPath(); x.moveTo(...o(crop.drag - 1)); x.lineTo(S / 2, S / 2); x.lineTo(...o(crop.drag + 1)); x.stroke();
+  x.strokeStyle = "rgba(255,255,255,.9)"; x.lineWidth = 1; x.beginPath(); x.moveTo(S / 2 - 7, S / 2); x.lineTo(S / 2 + 7, S / 2); x.moveTo(S / 2, S / 2 - 7); x.lineTo(S / 2, S / 2 + 7); x.stroke();
+}
+/* touch anywhere: the nearest corner follows the finger, keeping its offset so it never jumps */
 $("#cropBox").addEventListener("pointerdown", e => {
-  const h = e.target.closest(".hd"); if (!h || !crop) return; e.preventDefault(); h.setPointerCapture(e.pointerId);
-  const i = +h.dataset.i, im = $("#cropImg");
-  const move = ev => { const r = im.getBoundingClientRect(), k = r.width / crop.W;
-    crop.q[i] = [Math.max(0, Math.min(crop.W, (ev.clientX - r.left) / k)), Math.max(0, Math.min(crop.H, (ev.clientY - r.top) / k))]; drawCrop(); };
-  const up = () => { h.removeEventListener("pointermove", move); h.removeEventListener("pointerup", up); h.removeEventListener("pointercancel", up); };
-  h.addEventListener("pointermove", move); h.addEventListener("pointerup", up); h.addEventListener("pointercancel", up);
+  if (!crop || e.button > 0) return; const box = $("#cropBox"), r = $("#cropImg").getBoundingClientRect(), k = r.width / crop.W;
+  const fx = e.clientX - r.left, fy = e.clientY - r.top;
+  let i = -1, best = 1e9; crop.q.forEach((p, j) => { const dd = Math.hypot(p[0] * k - fx, p[1] * k - fy); if (dd < best) { best = dd; i = j; } });
+  if (i < 0 || best > Math.max(90, r.width * .3)) return;
+  e.preventDefault(); try { box.setPointerCapture(e.pointerId); } catch {}
+  const off = [crop.q[i][0] * k - fx, crop.q[i][1] * k - fy]; crop.drag = i; cropPaint();
+  const move = ev => { if (ev.pointerId !== e.pointerId) return; ev.preventDefault(); const r2 = $("#cropImg").getBoundingClientRect(), k2 = r2.width / crop.W;
+    crop.q[i] = [Math.max(0, Math.min(crop.W, (ev.clientX - r2.left + off[0]) / k2)), Math.max(0, Math.min(crop.H, (ev.clientY - r2.top + off[1]) / k2))]; cropPaint(); };
+  const up = ev => { if (ev.pointerId !== e.pointerId) return; box.removeEventListener("pointermove", move); box.removeEventListener("pointerup", up); box.removeEventListener("pointercancel", up); if (crop) { crop.drag = null; cropPaint(); } };
+  box.addEventListener("pointermove", move, { passive: false }); box.addEventListener("pointerup", up); box.addEventListener("pointercancel", up);
 });
+$("#cropBox").addEventListener("touchmove", e => { if (crop && crop.drag != null) e.preventDefault(); }, { passive: false });
 $("#cropAuto").addEventListener("click", () => { if (!crop) return; const q = Scan.detect(crop.img); if (q) { crop.q = q; drawCrop(); } else toast("หาขอบไม่เจอ ลากมุมเองได้"); });
 $("#cropAll").addEventListener("click", () => { if (!crop) return; crop.q = Scan.full(crop.img); drawCrop(); });
 $("#cropDone").addEventListener("click", async () => {
