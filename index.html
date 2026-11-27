@@ -113,6 +113,19 @@ button:focus-visible,a:focus-visible,.btn:focus-visible,.cell:focus-visible{outl
 .muted{color:var(--mute);font-size:15px}
 /* queue of scanned cards */
 .queue{margin-top:16px}
+.queue.strip{position:sticky;top:calc(52px + env(safe-area-inset-top));z-index:5;background:rgba(28,28,30,.94);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);padding:6px 0 10px}
+.qbar{display:flex;align-items:center;gap:6px;padding:0 10px}
+.qnav{width:40px;height:40px;border-radius:50%;border:0;background:var(--panel3);color:var(--lime);font-size:26px;line-height:1;display:grid;place-items:center;flex:none;padding-bottom:3px}
+.qnav:disabled{opacity:.3}
+.qinfo{flex:1;min-width:0;text-align:center;display:grid}.qinfo b{font-size:16px}.qinfo span{font-size:13px;color:var(--mute)}
+.qall{flex:none;font-size:15px;padding:0 6px}
+.qthumbs{display:flex;gap:8px;overflow-x:auto;padding:10px 12px 0;scrollbar-width:none;scroll-behavior:smooth}.qthumbs::-webkit-scrollbar{display:none}
+.qt{flex:none;width:58px;height:42px;border-radius:9px;border:2px solid transparent;padding:0;background:#000;overflow:hidden;position:relative;opacity:.75}
+.qt img{width:100%;height:100%;object-fit:cover;display:block}
+.qt.on{border-color:var(--lime);opacity:1;transform:scale(1.06)}
+.qt::after{content:"";position:absolute;right:3px;bottom:3px;width:8px;height:8px;border-radius:50%;background:#8e8e93;box-shadow:0 0 0 1.5px #000}
+.qt.s-ready::after{background:var(--lime)}.qt.s-error::after{background:var(--bad)}
+.qhead{display:flex!important;justify-content:space-between;align-items:center;padding-right:12px!important}
 .queue>.muted{display:block;padding:10px 16px 2px;font-size:13px}
 .qitem{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:12px;align-items:center;background:none;border:0;padding:8px 16px;cursor:pointer;color:var(--ink);font:inherit;text-align:left;width:100%;position:relative}
 .qitem+.qitem::before{content:"";position:absolute;top:0;left:72px;right:0;border-top:.5px solid var(--line)}
@@ -667,7 +680,7 @@ const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 
 const toast = (m, ms = 3200) => { const t = $("#toast"); t.textContent = m; t.classList.add("on"); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove("on"), ms); };
 const FIELDS = ["name_th","name_en","title","company","email","mobile","phone","line","website","address","place","note"];
 const validEmail = e => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e || "");
-const DEF_CARD = "namecard.jpg", DEF_QR = "line-qr.png", APP_V = "27 พ.ย. 69 · 14", DET_V = 4;
+const DEF_CARD = "namecard.jpg", DEF_QR = "line-qr.png", APP_V = "27 พ.ย. 69 · 15", DET_V = 4;
 
 const DEF = {
   nameTh: "ชัชชน (Sea)", nameEn: "Chuchchon Saenjaibal (Sea)", title: "Chief Executive Officer", company: "360TRUCK & 360TECHX",
@@ -1811,12 +1824,40 @@ async function addFiles(files, fromCamera){
 $("#cam").addEventListener("change", e => { addFiles(e.target.files, true); e.target.value = ""; });
 $("#pick").addEventListener("change", e => { addFiles(e.target.files, false); e.target.value = ""; });
 function draftName(d){ const o = d.form || d.ocr || {}; return o.name_th || o.name_en || o.company || ""; }
+/* review queue: while a card is open it folds into one sticky bar (‹ 3 of 8 ›) with a strip of thumbnails, so you never scroll up to pick the next */
+let qExpand = false;
+const QST = { prep: "กำลังเตรียมรูป…", waiting: "รอคิวอ่าน", reading: "กำลังอ่าน…", ready: "พร้อมตรวจ", error: "อ่านไม่ได้ กรอกเอง", edit: "กำลังแก้ไข" };
 function drawQueue(){
   const q = $("#queue");
-  if (drafts.length < 2 && !(drafts.length === 1 && cur !== drafts[0])) { q.innerHTML = ""; return; }
-  q.innerHTML = `<div class="muted">รอตรวจ ${drafts.length} ใบ</div>` + drafts.map(d => `<button type="button" class="qitem ${cur === d ? "on" : ""}" data-d="${d.id}"><img src="${d.url || ""}" alt=""><div><b>${esc(draftName(d) || "นามบัตร")}</b><span class="muted">${{ prep: "กำลังเตรียมรูป…", waiting: "รอคิวอ่าน", reading: "กำลังอ่าน…", ready: "พร้อมตรวจ", error: "อ่านไม่ได้ กรอกเอง" }[d.status] || ""}</span></div><span class="muted">›</span></button>`).join("");
+  if (drafts.length < 2 && !(drafts.length === 1 && cur !== drafts[0])) { q.innerHTML = ""; q.classList.remove("strip"); return; }
+  const i = drafts.indexOf(cur);
+  if (!qExpand && cur && i >= 0) {
+    q.classList.add("strip");
+    q.innerHTML = `<div class="qbar"><button type="button" class="qnav" data-q="-1" aria-label="ใบก่อนหน้า" ${i <= 0 ? "disabled" : ""}>‹</button>`
+      + `<div class="qinfo"><b>ใบที่ ${i + 1} จาก ${drafts.length}</b><span>${esc(QST[cur.status] || "")}</span></div>`
+      + `<button type="button" class="qnav" data-q="1" aria-label="ใบถัดไป" ${i >= drafts.length - 1 ? "disabled" : ""}>›</button><button type="button" class="link-btn qall" data-q="all">ทั้งหมด</button></div>`
+      + `<div class="qthumbs">${drafts.map((d, j) => `<button type="button" class="qt s-${d.status}${d === cur ? " on" : ""}" data-d="${d.id}" aria-label="ใบที่ ${j + 1} ${esc(draftName(d) || "")}"><img src="${d.url || ""}" alt=""></button>`).join("")}</div>`;
+    const on = q.querySelector(".qt.on"), box = q.querySelector(".qthumbs");
+    if (on && box) box.scrollLeft = Math.max(0, on.offsetLeft - box.clientWidth / 2 + on.offsetWidth / 2);
+    return;
+  }
+  q.classList.remove("strip");
+  q.innerHTML = `<div class="muted qhead"><span>รอตรวจ ${drafts.length} ใบ</span>${cur ? '<button type="button" class="link-btn" data-q="fold">ย่อ</button>' : ""}</div>` + drafts.map(d => `<button type="button" class="qitem ${cur === d ? "on" : ""}" data-d="${d.id}"><img src="${d.url || ""}" alt=""><div><b>${esc(draftName(d) || "นามบัตร")}</b><span class="muted">${QST[d.status] || ""}</span></div><span class="muted">›</span></button>`).join("");
 }
-$("#queue").addEventListener("click", e => { const b = e.target.closest("[data-d]"); if (!b) return; stash(); openDraft(drafts.find(d => d.id === b.dataset.d)); });
+/* bring the card being checked to the top, just under the bar */
+function toEditor(){
+  requestAnimationFrame(() => { const ed = $("#editor"); if (ed.hidden) return;
+    const top = ($("#nav").getBoundingClientRect().bottom || 0) + ($("#queue").classList.contains("strip") ? $("#queue").offsetHeight : 0) + 8;
+    window.scrollTo({ top: Math.max(0, ed.getBoundingClientRect().top + scrollY - top), behavior: "smooth" }); });
+}
+$("#queue").addEventListener("click", e => {
+  const b = e.target.closest("[data-d], [data-q]"); if (!b) return;
+  if (b.dataset.q === "all") { qExpand = true; drawQueue(); return; }
+  if (b.dataset.q === "fold") { qExpand = false; drawQueue(); toEditor(); return; }
+  let d = null;
+  if (b.dataset.q) { const i = drafts.indexOf(cur) + (+b.dataset.q); d = drafts[i]; } else d = drafts.find(x => x.id === b.dataset.d);
+  if (!d || d === cur) return; stash(); qExpand = false; openDraft(d); toEditor();
+});
 /* auto save: whatever is on screen is kept on the phone within half a second, and at once when the app goes to the background */
 const plainDraft = d => ({ ...d, blob: undefined, orig: undefined, selfie: undefined, url: undefined, selfieUrl: undefined, gpsP: undefined });
 function stash(){
@@ -1957,7 +1998,7 @@ $("#form").addEventListener("submit", async e => {
     const reviewMail = wantMail && validEmail(c.mail.to) && (c.mail.status === "draft" || c.mail.status === "failed");
     if (!reviewMail) toast(isEdit ? "แก้ไขเรียบร้อย" : "บันทึกเรียบร้อย", 3000);
     const next = drafts.find(x => x.status === "ready" || x.status === "error") || drafts[0];
-    if (next) openDraft(next); else { openDraft(null); go("list"); }
+    if (next) { openDraft(next); toEditor(); } else { openDraft(null); go("list"); }
     if (reviewMail) openMail(c.id, isEdit ? "แก้ไขเรียบร้อย · ตรวจอีเมลก่อนส่ง" : "บันทึกรายชื่อแล้ว · ตรวจอีเมลก่อนส่ง");
     syncSoon(300);
   } catch { fail("บันทึกไม่สำเร็จ ลองอีกครั้ง"); }
