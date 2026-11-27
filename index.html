@@ -548,7 +548,7 @@ const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 
 const toast = (m, ms = 3200) => { const t = $("#toast"); t.textContent = m; t.classList.add("on"); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove("on"), ms); };
 const FIELDS = ["name_th","name_en","title","company","email","mobile","phone","line","website","address","place","note"];
 const validEmail = e => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e || "");
-const DEF_CARD = "namecard.jpg", DEF_QR = "line-qr.png", APP_V = "27 พ.ย. 69 · 6", DET_V = 4;
+const DEF_CARD = "namecard.jpg", DEF_QR = "line-qr.png", APP_V = "27 พ.ย. 69 · 7", DET_V = 4;
 
 const DEF = {
   nameTh: "ชัชชน (Sea)", nameEn: "Chuchchon Saenjaibal (Sea)", title: "Chief Executive Officer", company: "360TRUCK & 360TECHX",
@@ -807,8 +807,15 @@ async function sync(){
       const p = c[kind]; if (!p || !p.local || p.d) continue;
       const b = await blobGet(c.id + ":" + kind); if (!b) { p.local = false; continue; }
       SY.msg = "กำลังเก็บรูปลง Drive…"; paintCloud();
-      const f = await gdUpload(b, `${fmtDT(c.createdAt).slice(0, 10)} ${clean(c.name_en || c.name_th || "card")}${c.company ? " – " + clean(c.company) : ""}${kind === "selfie" ? " (selfie)" : ""}.jpg`, F.photos, "image/jpeg");
-      p.d = f.id; p.url = safeUrl(f.webViewLink) || `https://drive.google.com/file/d/${f.id}/view`; c.u = Date.now(); c.sheetDirty = true; touched = true; await persist();
+      const nm = photoName(c, kind), f = await gdUpload(b, nm, F.photos, "image/jpeg");
+      p.d = f.id; p.n = nm; p.url = safeUrl(f.webViewLink) || `https://drive.google.com/file/d/${f.id}/view`; c.u = Date.now(); c.sheetDirty = true; touched = true; await persist();
+    }
+    /* keep Drive file names in step with the contact: YYYYMMDD_name_company_place */
+    if (S.driveOn) for (const c of D.cards) for (const kind of ["photo", "selfie"]) {
+      const p = c[kind]; if (!p || !p.d || p.old) continue; const nm = photoName(c, kind); if (p.n === nm) continue;
+      SY.msg = "กำลังตั้งชื่อรูปใน Drive…"; paintCloud();
+      try { await g(`${GD}/files/${p.d}?fields=id`, { method: "PATCH", json: { name: nm } }); } catch (e) { if (e.code === "auth") throw e; }
+      p.n = nm; c.u = Date.now(); touched = true; await persist();
     }
     /* emails waiting to go */
     for (const c of D.cards) {
@@ -850,6 +857,12 @@ async function sync(){
   finally { SY.busy = false; SY.msg = ""; paintCloud(); renderList(); if (SY.again) { SY.again = false; syncSoon(800); } }
 }
 const clean = s => String(s || "").replace(/[\\/:*?"<>|]+/g, " ").trim().slice(0, 50);
+/* Drive file name: YYYYMMDD_ชื่อ_บริษัท_ที่ที่เจอ (empty parts are left out) */
+function photoName(c, kind){
+  const t = new Date(c.createdAt || Date.now()), ymd = `${t.getFullYear()}${String(t.getMonth() + 1).padStart(2, "0")}${String(t.getDate()).padStart(2, "0")}`;
+  const part = v => clean(String(v || "").replace(/[_\s]+/g, " ")).slice(0, 60);
+  return [ymd, part(c.name_th || c.name_en) || "ไม่มีชื่อ", part(c.company), part(c.place)].filter(Boolean).join("_") + (kind === "selfie" ? "_เซลฟี่" : "") + ".jpg";
+}
 window.addEventListener("online", () => syncSoon(500));
 document.addEventListener("visibilitychange", () => { if (!document.hidden) { paintCloud(); syncSoon(800); } });
 
